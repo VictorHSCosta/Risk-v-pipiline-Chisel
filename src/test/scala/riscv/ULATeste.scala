@@ -3,9 +3,8 @@ package riscv
 import chisel3._
 import chiseltest._
 import org.scalatest.flatspec.AnyFlatSpec
-
-// Importamos os Opcodes que definimos junto com a ULA
-import ALUOp._
+import riscv.elementosbasicos.ULA
+import riscv.elementosbasicos.ALUOp._
 
 // O teste estende AnyFlatSpec (do ScalaTest) e ChiselScalatestTester
 class ULATest extends AnyFlatSpec with ChiselScalatestTester {
