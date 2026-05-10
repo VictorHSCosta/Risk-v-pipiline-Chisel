@@ -12,7 +12,7 @@ import chisel3.util._
   * - escrita sincronizada ao clock
   * - leitura combinacional
   */
-class CacheL1Base(val depthWords: Int = 1024, val allowWrite: Boolean = true) extends Module {
+class CacheL1Base(val depthWords: Int = 1024, val allowWrite: Boolean = true, initialData: Seq[Long] = Seq.empty) extends Module {
   require(depthWords > 0, "depthWords deve ser maior que zero")
 
   val io = IO(new Bundle {
@@ -22,7 +22,8 @@ class CacheL1Base(val depthWords: Int = 1024, val allowWrite: Boolean = true) ex
     val readData = Output(UInt(32.W))
   })
 
-  private val mem = RegInit(VecInit(Seq.fill(depthWords)(0.U(32.W))))
+  val paddedData = initialData.padTo(depthWords, 0L)
+  private val mem = RegInit(VecInit(paddedData.map(_.U(32.W))))
   private val addrBits = log2Ceil(depthWords)
   private val wordAddress = io.address(addrBits + 1, 2)
 
@@ -41,8 +42,8 @@ class CacheL1Base(val depthWords: Int = 1024, val allowWrite: Boolean = true) ex
   * Nesta versao inicial, herda a mesma interface da memoria base,
   * mas bloqueia escrita para funcionar como somente leitura.
   */
-class InstructionMemory(depthWords: Int = 1024)
-    extends CacheL1Base(depthWords = depthWords, allowWrite = false)
+class InstructionMemory(depthWords: Int = 1024, initialData: Seq[Long] = Seq.empty)
+    extends CacheL1Base(depthWords = depthWords, allowWrite = false, initialData = initialData)
 
 /**
   * Memoria de dados.
