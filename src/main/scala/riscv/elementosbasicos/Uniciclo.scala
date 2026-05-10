@@ -29,7 +29,8 @@ class Uniciclo(initialProgram: Seq[Long] = Seq.empty) extends Module {
   instrMem.io.address := pcReg
   instrMem.io.writeEnable := false.B
   instrMem.io.writeData := 0.U
-  val instruction = instrMem.io.readData
+  val instruction = WireDefault(instrMem.io.readData)
+  dontTouch(instruction)
 
   // Somador PC + 4
   adderPC4.io.a := pcReg
@@ -133,4 +134,9 @@ class Uniciclo(initialProgram: Seq[Long] = Seq.empty) extends Module {
   // ==========================================
   io.pcOut := pcReg
   io.ulaResultOut := ula.io.result
+}
+
+// Objeto para gerar o código Verilog
+object UnicicloVerilog extends App {
+  emitVerilog(new Uniciclo(), Array("--target-dir", "generated"))
 }
