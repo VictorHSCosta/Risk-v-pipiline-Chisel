@@ -1,6 +1,7 @@
 # Projeto RISC-V em Chisel
 
-Implementacao inicial de blocos de CPU RISC-V usando Chisel (Scala), com foco atual na ULA e testes automatizados.
+Implementacao inicial de blocos modulares para uma CPU RISC-V RV32I usando Chisel (Scala).
+O projeto foi limpo para preparar um pipeline futuro: nao ha mais top-level uniciclo, apenas blocos reutilizaveis e testes unitarios.
 
 ## Requisitos
 
@@ -15,9 +16,15 @@ java -version
 sbt --version
 ```
 
-## Estrutura do projeto
+## Estrutura atual
 
-- `src/main/scala/riscv/`: modulos de hardware (ex.: `ULA.scala`)
+- `src/main/scala/riscv/elementosbasicos/RV32I.scala`: constantes de opcode e seletores de controle RV32I.
+- `src/main/scala/riscv/elementosbasicos/Controller.scala`: decodificador/controlador combinacional para RV32I base.
+- `src/main/scala/riscv/elementosbasicos/ULA.scala`: ULA de 32 bits para operacoes aritmeticas/logicas RV32I.
+- `src/main/scala/riscv/elementosbasicos/ImmGen.scala`: gerador de imediatos I/S/B/U/J.
+- `src/main/scala/riscv/elementosbasicos/RegisterFile.scala`: banco de 32 registradores x 32 bits.
+- `src/main/scala/riscv/elementosbasicos/Memorias.scala`: memoria de instrucao por palavra e memoria de dados por byte.
+- `src/main/scala/riscv/pipeline/Pipeline3.scala`: top-level inicial de pipeline RV32I em 3 estagios.
 - `src/test/scala/riscv/`: testes com ScalaTest + chiseltest
 - `build.sbt`: dependencias e configuracoes do build
 
@@ -26,7 +33,7 @@ sbt --version
 Entre na pasta do projeto:
 
 ```bash
-cd "/home/victor-costa/Documentos/aprendendo tcc"
+cd "/home/victor-costa/Documentos/Risk-v-pipiline-Chisel"
 ```
 
 Compile o codigo:
@@ -75,9 +82,26 @@ xdg-open "target/scala-2.13/api/index.html"
 
 ## Fluxo recomendado no dia a dia
 
-1. Editar o modulo em `src/main/scala/riscv/`.
+1. Editar o modulo em `src/main/scala/riscv/elementosbasicos/`.
 2. Rodar `sbt test`.
 3. Se alterou comentarios Scaladoc, rodar `sbt docs`.
+
+## Escopo RV32I atual
+
+- A ULA cobre as operacoes exigidas por `OP` e `OP-IMM`: `ADD`, `SUB`, `SLL`, `SLT`, `SLTU`, `XOR`, `SRL`, `SRA`, `OR`, `AND`.
+- O controlador reconhece os opcodes base RV32I: `LUI`, `AUIPC`, `JAL`, `JALR`, branches, loads, stores, `OP-IMM`, `OP`, `FENCE`, `ECALL` e `EBREAK`.
+- Loads/stores ja saem do controlador com tamanho (`byte`, `half`, `word`) e sinalizacao de extensao sem sinal para `LBU`/`LHU`.
+- `DataMemory` suporta `LB`, `LH`, `LW`, `LBU`, `LHU`, `SB`, `SH` e `SW` em memoria byte-addressable. O proximo passo para um core completo e decidir como o pipeline vai tratar acessos desalinhados, traps e instrucoes `FENCE`/`SYSTEM`.
+
+## Pipeline inicial
+
+O modulo `Pipeline3` segue a organizacao didatica do capitulo 15:
+
+1. IF: busca de instrucao e atualizacao do PC.
+2. ID: decode, leitura do banco de registradores e geracao de imediato.
+3. EX/MEM/WB: ULA, branch/jump, acesso a memoria de dados e write-back.
+
+Ele ja possui forwarding simples do resultado do estagio EX para o decode e flush em branch/jump. Ainda nao implementa traps reais, CSRs, tratamento completo de `FENCE`/`SYSTEM` nem politica final para acessos desalinhados.
 
 ## Erros comuns e como resolver
 
