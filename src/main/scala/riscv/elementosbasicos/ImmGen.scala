@@ -15,6 +15,8 @@ class ImmGen extends Module {
     val imm = Output(UInt(32.W))
   })
 
+  import RV32I.Opcode
+
   // Opcode: 7 bits menos significativos da instrucao.
   val opcode = io.instr(6, 0)
 
@@ -35,27 +37,27 @@ class ImmGen extends Module {
 
   switch(opcode) {
     // Tipo I: loads, arith-immediate, jalr
-    is("b0000011".U, "b0010011".U, "b1100111".U) {
+    is(Opcode.LOAD, Opcode.OP_IMM, Opcode.JALR) {
       io.imm := signExtI
     }
 
     // Tipo S: stores
-    is("b0100011".U) {
+    is(Opcode.STORE) {
       io.imm := signExtS
     }
 
     // Tipo B: branches
-    is("b1100011".U) {
+    is(Opcode.BRANCH) {
       io.imm := signExtB
     }
 
     // Tipo U: lui, auipc
-    is("b0110111".U, "b0010111".U) {
+    is(Opcode.LUI, Opcode.AUIPC) {
       io.imm := immU
     }
 
     // Tipo J: jal
-    is("b1101111".U) {
+    is(Opcode.JAL) {
       io.imm := signExtJ
     }
   }
