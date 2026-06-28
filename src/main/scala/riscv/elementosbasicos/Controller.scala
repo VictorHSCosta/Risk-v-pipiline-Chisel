@@ -8,7 +8,6 @@ class ControlSignals extends Bundle {
   val aluOp = UInt(4.W)
   val operandASel = UInt(2.W)
   val operandBSel = UInt(1.W)
-  val memRead = Bool()
   val memWrite = Bool()
   val memSize = UInt(2.W)
   val memUnsigned = Bool()
@@ -34,7 +33,6 @@ class Controller extends Module {
   io.signals.aluOp := ALUOp.ADD
   io.signals.operandASel := OperandASel.RS1
   io.signals.operandBSel := OperandBSel.RS2
-  io.signals.memRead := false.B
   io.signals.memWrite := false.B
   io.signals.memSize := MemorySize.WORD
   io.signals.memUnsigned := false.B
@@ -115,7 +113,6 @@ class Controller extends Module {
       io.signals.regWrite := true.B
       io.signals.operandBSel := OperandBSel.IMM
       io.signals.writebackSel := WritebackSel.MEM
-      io.signals.memRead := true.B
       io.signals.aluOp := ALUOp.ADD
       switch(io.funct3) {
         is("b000".U) { io.signals.memSize := MemorySize.BYTE }
@@ -223,7 +220,6 @@ class Controller extends Module {
 
   when(illegal) {
     io.signals.regWrite := false.B
-    io.signals.memRead := false.B
     io.signals.memWrite := false.B
     io.signals.jump := false.B
     io.signals.branchType := BranchType.NONE

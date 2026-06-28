@@ -2,11 +2,14 @@
 target/
 project/target/
 project/project/
+out/
 
 # Bloop / Metals / Scala CLI
+.bsp/
 .bloop/
 .metals/
 .scala-build/
+.ammonite/
 
 # IDE and OS files
 .idea/
@@ -17,11 +20,22 @@ project/project/
 
 # Chisel/FIRRTL/Verilog generated artifacts
 *.fir
+*.firrtl
 *.anno.json
 *.v
+*.sv
+*.vcd
+*.fst
+*.fstd
+*.gtkw
+generated/
 
 # Test outputs and temporary run directories
 test_run_dir/
+test_run_dir*/
+*.log
+*.tmp
+*.bak
 
-
+# Local example workspace ignored by this repository.
 exemplo/

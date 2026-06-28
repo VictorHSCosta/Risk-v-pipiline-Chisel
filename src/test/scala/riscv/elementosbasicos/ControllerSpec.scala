@@ -20,7 +20,6 @@ class ControllerSpec extends AnyFlatSpec with ChiselScalatestTester {
       dut.io.signals.regWrite.expect(true.B)
       dut.io.signals.operandBSel.expect(RV32I.OperandBSel.RS2)
       dut.io.signals.aluOp.expect(ALUOp.ADD)
-      dut.io.signals.memRead.expect(false.B)
       dut.io.signals.memWrite.expect(false.B)
       dut.io.signals.branchType.expect(RV32I.BranchType.NONE)
       dut.io.signals.illegal.expect(false.B)
@@ -42,7 +41,6 @@ class ControllerSpec extends AnyFlatSpec with ChiselScalatestTester {
 
       dut.io.signals.regWrite.expect(true.B)
       dut.io.signals.operandBSel.expect(RV32I.OperandBSel.IMM)
-      dut.io.signals.memRead.expect(true.B)
       dut.io.signals.writebackSel.expect(RV32I.WritebackSel.MEM)
       dut.io.signals.memSize.expect(RV32I.MemorySize.WORD)
       dut.io.signals.memUnsigned.expect(false.B)
