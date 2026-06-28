@@ -5,7 +5,6 @@ import chisel3._
 object RV32I {
   object Opcode {
     val LOAD     = "b0000011".U(7.W)
-    val MISC_MEM = "b0001111".U(7.W)
     val OP_IMM   = "b0010011".U(7.W)
     val AUIPC    = "b0010111".U(7.W)
     val STORE    = "b0100011".U(7.W)
@@ -14,7 +13,6 @@ object RV32I {
     val BRANCH   = "b1100011".U(7.W)
     val JALR     = "b1100111".U(7.W)
     val JAL      = "b1101111".U(7.W)
-    val SYSTEM   = "b1110011".U(7.W)
   }
 
   object BranchType {
@@ -49,12 +47,5 @@ object RV32I {
     val MEM = 1.U(2.W)
     val PC4 = 2.U(2.W)
     val IMM = 3.U(2.W)
-  }
-
-  object SystemOp {
-    val NONE   = 0.U(2.W)
-    val FENCE  = 1.U(2.W)
-    val ECALL  = 2.U(2.W)
-    val EBREAK = 3.U(2.W)
   }
 }

@@ -7,11 +7,10 @@ import org.scalatest.flatspec.AnyFlatSpec
 class ControllerSpec extends AnyFlatSpec with ChiselScalatestTester {
   behavior of "Controller"
 
-  private def pokeBase(dut: Controller, opcode: UInt, funct3: UInt = 0.U, funct7: UInt = 0.U, imm12: UInt = 0.U): Unit = {
+  private def pokeBase(dut: Controller, opcode: UInt, funct3: UInt = 0.U, funct7: UInt = 0.U): Unit = {
     dut.io.opcode.poke(opcode)
     dut.io.funct3.poke(funct3)
     dut.io.funct7.poke(funct7)
-    dut.io.imm12.poke(imm12)
   }
 
   it should "decodificar instrucao ADD corretamente (Tipo R)" in {
@@ -71,22 +70,6 @@ class ControllerSpec extends AnyFlatSpec with ChiselScalatestTester {
 
       dut.io.signals.illegal.expect(true.B)
       dut.io.signals.regWrite.expect(false.B)
-    }
-  }
-
-  it should "decodificar FENCE, ECALL e EBREAK da base RV32I" in {
-    test(new Controller) { dut =>
-      pokeBase(dut, RV32I.Opcode.MISC_MEM, "b000".U)
-      dut.io.signals.systemOp.expect(RV32I.SystemOp.FENCE)
-      dut.io.signals.illegal.expect(false.B)
-
-      pokeBase(dut, RV32I.Opcode.SYSTEM, "b000".U, imm12 = "h000".U)
-      dut.io.signals.systemOp.expect(RV32I.SystemOp.ECALL)
-      dut.io.signals.illegal.expect(false.B)
-
-      pokeBase(dut, RV32I.Opcode.SYSTEM, "b000".U, imm12 = "h001".U)
-      dut.io.signals.systemOp.expect(RV32I.SystemOp.EBREAK)
-      dut.io.signals.illegal.expect(false.B)
     }
   }
 }

@@ -27,7 +27,7 @@ class DecodeExecuteBundle extends Bundle {
   * - memoria de instrucao e dados internas;
   * - forwarding simples do resultado do estagio EX para o decode;
   * - flush em branch/jump;
-  * - sem traps/CSRs reais para FENCE, ECALL e EBREAK.
+  * - sem suporte a traps, CSRs, FENCE, ECALL e EBREAK.
   */
 class Pipeline3(initialProgram: Seq[Long] = Seq.empty, memoryWords: Int = 1024) extends Module {
   val io = IO(new Bundle {
@@ -117,7 +117,6 @@ class Pipeline3(initialProgram: Seq[Long] = Seq.empty, memoryWords: Int = 1024) 
   controller.io.opcode := ifIdInstr(6, 0)
   controller.io.funct3 := ifIdInstr(14, 12)
   controller.io.funct7 := ifIdInstr(31, 25)
-  controller.io.imm12 := ifIdInstr(31, 20)
 
   val idRs1 = ifIdInstr(19, 15)
   val idRs2 = ifIdInstr(24, 20)

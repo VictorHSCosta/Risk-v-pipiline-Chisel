@@ -16,7 +16,6 @@ class ControlSignals extends Bundle {
   val writebackSel = UInt(2.W)
   val jump = Bool()
   val jalr = Bool()
-  val systemOp = UInt(2.W)
   val illegal = Bool()
 }
 
@@ -25,7 +24,6 @@ class Controller extends Module {
     val opcode = Input(UInt(7.W))
     val funct3 = Input(UInt(3.W))
     val funct7 = Input(UInt(7.W))
-    val imm12 = Input(UInt(12.W))
     
     val signals = Output(new ControlSignals)
   })
@@ -44,7 +42,6 @@ class Controller extends Module {
   io.signals.writebackSel := WritebackSel.ALU
   io.signals.jump := false.B
   io.signals.jalr := false.B
-  io.signals.systemOp := SystemOp.NONE
   val illegal = WireDefault(true.B)
   io.signals.illegal := illegal
 
@@ -222,19 +219,6 @@ class Controller extends Module {
       illegal := io.funct3 =/= "b000".U
     }
 
-    is(Opcode.MISC_MEM) {
-      io.signals.systemOp := SystemOp.FENCE
-      illegal := io.funct3 =/= "b000".U
-    }
-
-    is(Opcode.SYSTEM) {
-      switch(io.imm12) {
-        is("h000".U) { io.signals.systemOp := SystemOp.ECALL }
-        is("h001".U) { io.signals.systemOp := SystemOp.EBREAK }
-      }
-      illegal := !(io.funct3 === "b000".U &&
-        (io.imm12 === "h000".U || io.imm12 === "h001".U))
-    }
   }
 
   when(illegal) {
@@ -243,6 +227,5 @@ class Controller extends Module {
     io.signals.memWrite := false.B
     io.signals.jump := false.B
     io.signals.branchType := BranchType.NONE
-    io.signals.systemOp := SystemOp.NONE
   }
 }

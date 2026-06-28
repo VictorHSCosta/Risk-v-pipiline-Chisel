@@ -89,9 +89,9 @@ xdg-open "target/scala-2.13/api/index.html"
 ## Escopo RV32I atual
 
 - A ULA cobre as operacoes exigidas por `OP` e `OP-IMM`: `ADD`, `SUB`, `SLL`, `SLT`, `SLTU`, `XOR`, `SRL`, `SRA`, `OR`, `AND`.
-- O controlador reconhece os opcodes base RV32I: `LUI`, `AUIPC`, `JAL`, `JALR`, branches, loads, stores, `OP-IMM`, `OP`, `FENCE`, `ECALL` e `EBREAK`.
+- O controlador reconhece os opcodes RV32I usados pelo pipeline inicial: `LUI`, `AUIPC`, `JAL`, `JALR`, branches, loads, stores, `OP-IMM` e `OP`.
 - Loads/stores ja saem do controlador com tamanho (`byte`, `half`, `word`) e sinalizacao de extensao sem sinal para `LBU`/`LHU`.
-- `DataMemory` suporta `LB`, `LH`, `LW`, `LBU`, `LHU`, `SB`, `SH` e `SW` em memoria byte-addressable. O proximo passo para um core completo e decidir como o pipeline vai tratar acessos desalinhados, traps e instrucoes `FENCE`/`SYSTEM`.
+- `DataMemory` suporta `LB`, `LH`, `LW`, `LBU`, `LHU`, `SB`, `SH` e `SW` em memoria byte-addressable. O proximo passo para um core mais completo e decidir como o pipeline vai tratar acessos desalinhados e traps.
 
 ## Pipeline inicial
 
@@ -101,7 +101,7 @@ O modulo `Pipeline3` segue a organizacao didatica do capitulo 15:
 2. ID: decode, leitura do banco de registradores e geracao de imediato.
 3. EX/MEM/WB: ULA, branch/jump, acesso a memoria de dados e write-back.
 
-Ele ja possui forwarding simples do resultado do estagio EX para o decode e flush em branch/jump. Ainda nao implementa traps reais, CSRs, tratamento completo de `FENCE`/`SYSTEM` nem politica final para acessos desalinhados.
+Ele ja possui forwarding simples do resultado do estagio EX para o decode e flush em branch/jump. Ainda nao implementa traps reais, CSRs, `FENCE`, `ECALL`, `EBREAK` nem politica final para acessos desalinhados.
 
 ## Erros comuns e como resolver
 
