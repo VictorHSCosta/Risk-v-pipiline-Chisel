@@ -89,8 +89,6 @@ class Pipeline3(initialProgram: Seq[Long] = Seq.empty, memoryWords: Int = 1024) 
   val pcNext = Mux(controlRedirect, redirectTarget, pcReg + 4.U)
 
   instrMem.io.address := pcNext
-  instrMem.io.writeData := 0.U
-  instrMem.io.writeEnable := false.B
 
   dataMem.io.address := idEx.memAddress
   dataMem.io.writeData := idEx.memWriteData
