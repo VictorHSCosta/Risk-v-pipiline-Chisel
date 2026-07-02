@@ -26,8 +26,6 @@ class DecodeExecuteBundle extends Bundle {
   * Esta versao e intencionalmente pequena para servir de base ao pipeline:
   * - memoria de instrucao e dados internas;
   * - forwarding simples do resultado do estagio EX para o decode;
-  * - flush em branch/jump;
-  * - sem suporte a traps, CSRs, FENCE, ECALL e EBREAK.
   */
 class Pipeline3(initialProgram: Seq[Long] = Seq.empty, memoryWords: Int = 1024) extends Module {
   val io = IO(new Bundle {
@@ -51,7 +49,7 @@ class Pipeline3(initialProgram: Seq[Long] = Seq.empty, memoryWords: Int = 1024) 
   val controller = Module(new Controller)
   val ula = Module(new ULA)
 
-  val pcReg = RegInit((-4).S(32.W).asUInt)
+  val pcReg = RegInit(0.U(32.W))
   val ifIdPc = RegInit(0.U(32.W))
   val ifIdInstr = RegInit(nop)
   val idEx = RegInit(0.U.asTypeOf(new DecodeExecuteBundle))
@@ -88,7 +86,7 @@ class Pipeline3(initialProgram: Seq[Long] = Seq.empty, memoryWords: Int = 1024) 
   val redirectTarget = Mux(idEx.signals.jalr, jalrTarget, pcRelativeTarget)
   val pcNext = Mux(controlRedirect, redirectTarget, pcReg + 4.U)
 
-  instrMem.io.address := pcNext
+  instrMem.io.address := pcReg
 
   dataMem.io.address := idEx.memAddress
   dataMem.io.writeData := idEx.memWriteData
@@ -123,7 +121,7 @@ class Pipeline3(initialProgram: Seq[Long] = Seq.empty, memoryWords: Int = 1024) 
   val decodedMemAddress = (forwardedRs1.asSInt + immGen.io.imm.asSInt).asUInt
 
   pcReg := pcNext
-  ifIdPc := pcNext
+  ifIdPc := pcReg
   ifIdInstr := Mux(controlRedirect, nop, instrMem.io.readData)
 
   idEx.valid := !controlRedirect

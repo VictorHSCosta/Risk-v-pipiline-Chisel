@@ -23,6 +23,18 @@ class Pipeline3Spec extends AnyFlatSpec with ChiselScalatestTester {
       0x33L
   }
 
+  private def beq(rs1: Int, rs2: Int, imm: Int): Long = {
+    val encodedImm = imm & 0x1FFF
+    (((encodedImm >> 12) & 0x1).toLong << 31) |
+      (((encodedImm >> 5) & 0x3F).toLong << 25) |
+      ((rs2 & 0x1F).toLong << 20) |
+      ((rs1 & 0x1F).toLong << 15) |
+      (0x0L << 12) |
+      (((encodedImm >> 1) & 0xF).toLong << 8) |
+      (((encodedImm >> 11) & 0x1).toLong << 7) |
+      0x63L
+  }
+
   it should "executar uma sequencia aritmetica pequena com forwarding basico" in {
     val program = Seq(
       addi(1, 0, 5), // x1 = 5
@@ -38,6 +50,27 @@ class Pipeline3Spec extends AnyFlatSpec with ChiselScalatestTester {
 
       dut.io.writebackRd.expect(3)
       dut.io.writebackData.expect(13)
+      dut.io.writebackEnable.expect(true)
+    }
+  }
+
+  it should "fazer flush da instrucao seguinte quando um branch e tomado" in {
+    val program = Seq(
+      addi(1, 0, 5),   // x1 = 5
+      addi(2, 0, 5),   // x2 = 5
+      beq(1, 2, 8),    // pula a proxima instrucao
+      addi(3, 0, 99),  // deve ser descartada pelo flush
+      addi(3, 0, 42),  // alvo do branch
+      addi(0, 0, 0)
+    )
+
+    test(new Pipeline3(initialProgram = program, memoryWords = 32)) { dut =>
+      for (_ <- 0 until 7) {
+        dut.clock.step(1)
+      }
+
+      dut.io.writebackRd.expect(3)
+      dut.io.writebackData.expect(42)
       dut.io.writebackEnable.expect(true)
     }
   }
