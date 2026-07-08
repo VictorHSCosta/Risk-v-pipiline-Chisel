@@ -54,6 +54,182 @@ Rode apenas o teste da ULA:
 sbt "testOnly riscv.ULATest"
 ```
 
+## Gerando Verilog e simulando com Icarus/GTKWave
+
+Este fluxo gera o Verilog do `Pipeline3`, carrega um programa em hexadecimal,
+executa a simulacao com Icarus Verilog e abre as ondas no GTKWave.
+
+### Ferramentas
+
+Instale as ferramentas de simulacao:
+
+```bash
+sudo apt update
+sudo apt install iverilog gtkwave
+```
+
+### Arquivo de programa
+
+O arquivo de programa usado pelo fluxo atual fica em:
+
+```text
+generated/program.hex
+```
+
+Cada linha desse arquivo deve conter **uma instrucao RV32I de 32 bits em
+hexadecimal**, sem `0x`, com 8 digitos por linha:
+
+```text
+00500313
+00a00393
+007302b3
+0000006f
+```
+
+Isso representa a memoria de instrucoes por palavra:
+
+- linha 1: instrucao no endereco `0x00000000`
+- linha 2: instrucao no endereco `0x00000004`
+- linha 3: instrucao no endereco `0x00000008`
+- linha 4: instrucao no endereco `0x0000000c`
+
+Ou seja, o PC anda em bytes, mas a memoria usa uma instrucao de 32 bits por
+linha. Internamente, a memoria usa `PC / 4` para escolher a linha do arquivo.
+
+### Gerar o Verilog
+
+Entre na raiz do projeto:
+
+```bash
+cd ~/Documentos/Risk-v-pipiline-Chisel
+```
+
+Gere o Verilog do pipeline usando `generated/program.hex` como memoria de
+instrucoes:
+
+```bash
+sbt "runMain riscv.pipeline.GeneratePipeline3Verilog generated/program.hex generated"
+```
+
+Esse comando gera/atualiza principalmente:
+
+```text
+generated/Pipeline3.v
+generated/Pipeline3.fir
+generated/Pipeline3.anno.json
+```
+
+O arquivo mais importante para a simulacao com Icarus e:
+
+```text
+generated/Pipeline3.v
+```
+
+### Testbench Verilog
+
+O testbench usado neste fluxo e:
+
+```text
+generated/tb_pipeline3.v
+```
+
+Ele instancia o modulo `Pipeline3`, gera clock/reset, imprime alguns sinais no
+terminal e cria o arquivo de ondas:
+
+```text
+pipeline.vcd
+```
+
+Dentro do testbench, as linhas responsaveis pelo GTKWave sao:
+
+```verilog
+$dumpfile("pipeline.vcd");
+$dumpvars(0, tb_pipeline3);
+```
+
+### Compilar e rodar a simulacao
+
+Compile o Verilog gerado junto com o testbench:
+
+```bash
+iverilog -g2012 -o generated/pipeline3_sim.out generated/Pipeline3.v generated/tb_pipeline3.v
+```
+
+Execute a simulacao:
+
+```bash
+vvp generated/pipeline3_sim.out
+```
+
+Ao final, deve aparecer no projeto o arquivo:
+
+```text
+pipeline.vcd
+```
+
+Se aparecer um aviso parecido com este:
+
+```text
+Not enough words in the file for the requested range [0:1023]
+```
+
+isso normalmente nao e erro. Ele so indica que `generated/program.hex` tem menos
+linhas do que o tamanho total da memoria de instrucoes. As posicoes nao
+preenchidas ficam indefinidas.
+
+### Abrir as ondas no GTKWave
+
+No seu caso, abra o terminal, entre na pasta do projeto e rode:
+
+```bash
+cd ~/Documentos/Risk-v-pipiline-Chisel
+gtkwave pipeline.vcd &
+```
+
+No GTKWave, procure a hierarquia `tb_pipeline3 -> dut` e comece observando:
+
+```text
+clock
+reset
+io_pc
+io_instr
+io_aluResult
+io_writebackEnable
+io_writebackRd
+io_writebackData
+io_illegal
+```
+
+Dentro de `instrMem`, os sinais principais sao:
+
+```text
+io_address
+io_readData
+mem_io_readData_MPORT_addr
+mem_io_readData_MPORT_data
+mem_io_readData_MPORT_en
+```
+
+Interpretacao rapida:
+
+- `io_address`: endereco em bytes recebido pela memoria, normalmente o PC.
+- `io_readData`: instrucao de 32 bits entregue ao pipeline.
+- `mem_io_readData_MPORT_addr`: indice interno da memoria, equivalente a `PC / 4`.
+- `mem_io_readData_MPORT_data`: instrucao bruta lida da memoria.
+- `mem_io_readData_MPORT_en`: enable da porta de leitura.
+
+### Sequencia completa
+
+Para repetir tudo do zero:
+
+```bash
+cd ~/Documentos/Risk-v-pipiline-Chisel
+sbt "runMain riscv.pipeline.GeneratePipeline3Verilog generated/program.hex generated"
+iverilog -g2012 -o generated/pipeline3_sim.out generated/Pipeline3.v generated/tb_pipeline3.v
+vvp generated/pipeline3_sim.out
+gtkwave pipeline.vcd &
+```
+
 ## Documentacao HTML (Scaladoc)
 
 Este projeto ja esta configurado para gerar documentacao HTML a partir de comentarios Scaladoc (`/** ... */`).
