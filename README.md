@@ -63,7 +63,12 @@ O projeto usa GitHub Actions para validar o codigo a cada `push` e
 .github/workflows/ci.yml
 ```
 
-O CI roda:
+O CI possui dois jobs separados, para ficar claro onde uma falha aconteceu:
+
+- `Lint / Scalafmt`: verifica a formatacao.
+- `Tests / ChiselTest`: roda os testes do projeto.
+
+Eles executam:
 
 ```bash
 sbt scalafmtCheckAll

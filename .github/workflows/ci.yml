@@ -5,8 +5,8 @@ on:
   pull_request:
 
 jobs:
-  chisel-test:
-    name: Chisel tests
+  lint:
+    name: Lint / Scalafmt
     runs-on: ubuntu-latest
 
     steps:
@@ -25,6 +25,24 @@ jobs:
 
       - name: Check formatting
         run: sbt scalafmtCheckAll
+
+  test:
+    name: Tests / ChiselTest
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: sbt
+
+      - name: Set up sbt
+        uses: sbt/setup-sbt@v1
 
       - name: Run tests
         run: sbt test
