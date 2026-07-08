@@ -9,17 +9,6 @@ scalacOptions ++= Seq(
   "-language:reflectiveCalls",
 )
 
-// Configuracao do Scaladoc (gera documentacao HTML via sbt)
-Compile / doc / scalacOptions ++= Seq(
-  "-doc-title",
-  "Documentacao do Projeto RISC-V em Chisel",
-  "-doc-version",
-  version.value,
-)
-
-// Atalho: `sbt docs` para gerar o HTML da documentacao
-addCommandAlias("docs", "Compile / doc")
-
 val chiselVersion = "3.6.1"
 
 addCompilerPlugin("edu.berkeley.cs" % "chisel3-plugin" % chiselVersion cross CrossVersion.full)

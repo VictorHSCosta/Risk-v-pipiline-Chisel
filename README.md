@@ -230,37 +230,10 @@ vvp generated/pipeline3_sim.out
 gtkwave pipeline.vcd &
 ```
 
-## Documentacao HTML (Scaladoc)
-
-Este projeto ja esta configurado para gerar documentacao HTML a partir de comentarios Scaladoc (`/** ... */`).
-
-Gerar documentacao:
-
-```bash
-sbt docs
-```
-
-Comando equivalente:
-
-```bash
-sbt "Compile / doc"
-```
-
-Arquivo principal gerado:
-
-`target/scala-2.13/api/index.html`
-
-Abrir no navegador no Linux:
-
-```bash
-xdg-open "target/scala-2.13/api/index.html"
-```
-
 ## Fluxo recomendado no dia a dia
 
 1. Editar o modulo em `src/main/scala/riscv/elementosbasicos/`.
 2. Rodar `sbt test`.
-3. Se alterou comentarios Scaladoc, rodar `sbt docs`.
 
 ## Escopo RV32I atual
 
