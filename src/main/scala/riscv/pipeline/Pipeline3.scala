@@ -27,7 +27,11 @@ class DecodeExecuteBundle extends Bundle {
   * - memoria de instrucao e dados internas;
   * - forwarding simples do resultado do estagio EX para o decode;
   */
-class Pipeline3(initialProgram: Seq[Long] = Seq.empty, memoryWords: Int = 1024) extends Module {
+class Pipeline3(
+  initialProgram: Seq[Long] = Seq.empty,
+  memoryWords: Int = 1024,
+  programFile: String = ""
+) extends Module {
   val io = IO(new Bundle {
     val pc = Output(UInt(32.W))
     val instr = Output(UInt(32.W))
@@ -42,7 +46,11 @@ class Pipeline3(initialProgram: Seq[Long] = Seq.empty, memoryWords: Int = 1024) 
 
   val nop = "h00000013".U(32.W) // addi x0, x0, 0
 
-  val instrMem = Module(new InstructionMemory(depthWords = memoryWords, initialData = initialProgram))
+  val instrMem = Module(new InstructionMemory(
+    depthWords = memoryWords,
+    initialData = initialProgram,
+    programFile = programFile
+  ))
   val dataMem = Module(new DataMemory(depthWords = memoryWords))
   val regFile = Module(new RegisterFile)
   val immGen = Module(new ImmGen)

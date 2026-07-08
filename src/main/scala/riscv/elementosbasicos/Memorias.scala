@@ -2,6 +2,7 @@ package riscv.elementosbasicos
 
 import chisel3._
 import chisel3.util._
+import chisel3.util.experimental.loadMemoryFromFileInline
 
 /**
   * Memoria de instrucoes somente leitura.
@@ -9,19 +10,33 @@ import chisel3.util._
   * O endereco chega em bytes, mas cada instrucao tem 4 bytes. Por isso os bits
   * 1 e 0 sao ignorados para converter endereco de byte em indice de palavra.
   */
-class InstructionMemory(depthWords: Int = 1024, initialData: Seq[Long] = Seq.empty) extends Module {
+class InstructionMemory(
+  depthWords: Int = 1024,
+  initialData: Seq[Long] = Seq.empty,
+  programFile: String = ""
+) extends Module {
   require(depthWords > 0, "depthWords deve ser maior que zero")
+  require(
+    initialData.isEmpty || programFile.isEmpty,
+    "use initialData para testes Chisel ou programFile para simulacao Verilog, nao ambos"
+  )
 
   val io = IO(new Bundle {
     val address = Input(UInt(32.W))
     val readData = Output(UInt(32.W))
   })
 
-  private val program = initialData.padTo(depthWords, 0L)
-  private val mem = VecInit(program.map(_.U(32.W)))
   private val wordIndex = io.address(log2Ceil(depthWords) + 1, 2)
 
-  io.readData := mem(wordIndex)
+  if (programFile.nonEmpty) {
+    val mem = Mem(depthWords, UInt(32.W))
+    loadMemoryFromFileInline(mem, programFile)
+    io.readData := mem(wordIndex)
+  } else {
+    val program = initialData.padTo(depthWords, 0L)
+    val mem = VecInit(program.map(_.U(32.W)))
+    io.readData := mem(wordIndex)
+  }
 }
 
 /**

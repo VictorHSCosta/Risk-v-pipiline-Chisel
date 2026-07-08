@@ -17,6 +17,8 @@ out/
 *.swp
 *.swo
 .DS_Store
+.codex
+.agents
 
 # Chisel/FIRRTL/Verilog generated artifacts
 *.fir
@@ -24,6 +26,7 @@ out/
 *.anno.json
 *.v
 *.sv
+!modelsim/tb_pipeline3.v
 *.vcd
 *.fst
 *.fstd
@@ -39,3 +42,7 @@ test_run_dir*/
 
 # Local example workspace ignored by this repository.
 exemplo/
+
+# model sim work fold
+assembly_code
+work
