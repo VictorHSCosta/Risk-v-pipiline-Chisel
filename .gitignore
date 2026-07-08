@@ -3,6 +3,7 @@ target/
 project/target/
 project/project/
 out/
+dist/
 
 # Bloop / Metals / Scala CLI
 .bsp/
@@ -10,15 +11,18 @@ out/
 .metals/
 .scala-build/
 .ammonite/
+.coursier/
 
 # IDE and OS files
 .idea/
 .vscode/
 *.swp
 *.swo
+*~
 .DS_Store
 .codex
 .agents
+cs
 
 # Chisel/FIRRTL/Verilog generated artifacts
 *.fir
@@ -31,6 +35,8 @@ out/
 *.fst
 *.fstd
 *.gtkw
+*.out
+*.vvp
 generated/
 
 # Test outputs and temporary run directories
@@ -45,4 +51,6 @@ exemplo/
 
 # model sim work fold
 assembly_code
-work
+work/
+transcript
+vsim.wlf

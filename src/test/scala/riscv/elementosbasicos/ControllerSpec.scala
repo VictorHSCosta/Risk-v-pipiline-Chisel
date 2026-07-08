@@ -7,7 +7,12 @@ import org.scalatest.flatspec.AnyFlatSpec
 class ControllerSpec extends AnyFlatSpec with ChiselScalatestTester {
   behavior of "Controller"
 
-  private def pokeBase(dut: Controller, opcode: UInt, funct3: UInt = 0.U, funct7: UInt = 0.U): Unit = {
+  private def pokeBase(
+      dut: Controller,
+      opcode: UInt,
+      funct3: UInt = 0.U,
+      funct7: UInt = 0.U
+  ): Unit = {
     dut.io.opcode.poke(opcode)
     dut.io.funct3.poke(funct3)
     dut.io.funct7.poke(funct7)

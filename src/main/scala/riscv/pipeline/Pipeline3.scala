@@ -19,18 +19,17 @@ class DecodeExecuteBundle extends Bundle {
   val signals = new ControlSignals
 }
 
-/**
-  * Pipeline RV32I educacional de 3 estagios, inspirado no Wildcat do livro:
-  * IF, ID/RF/address-prep e EX/MEM/WB.
+/** Pipeline RV32I educacional de 3 estagios, inspirado no Wildcat do livro: IF,
+  * ID/RF/address-prep e EX/MEM/WB.
   *
   * Esta versao e intencionalmente pequena para servir de base ao pipeline:
-  * - memoria de instrucao e dados internas;
-  * - forwarding simples do resultado do estagio EX para o decode;
+  *   - memoria de instrucao e dados internas;
+  *   - forwarding simples do resultado do estagio EX para o decode;
   */
 class Pipeline3(
-  initialProgram: Seq[Long] = Seq.empty,
-  memoryWords: Int = 1024,
-  programFile: String = ""
+    initialProgram: Seq[Long] = Seq.empty,
+    memoryWords: Int = 1024,
+    programFile: String = ""
 ) extends Module {
   val io = IO(new Bundle {
     val pc = Output(UInt(32.W))
@@ -46,11 +45,13 @@ class Pipeline3(
 
   val nop = "h00000013".U(32.W) // addi x0, x0, 0
 
-  val instrMem = Module(new InstructionMemory(
-    depthWords = memoryWords,
-    initialData = initialProgram,
-    programFile = programFile
-  ))
+  val instrMem = Module(
+    new InstructionMemory(
+      depthWords = memoryWords,
+      initialData = initialProgram,
+      programFile = programFile
+    )
+  )
   val dataMem = Module(new DataMemory(depthWords = memoryWords))
   val regFile = Module(new RegisterFile)
   val immGen = Module(new ImmGen)
@@ -83,8 +84,12 @@ class Pipeline3(
   switch(idEx.signals.branchType) {
     is(BranchType.BEQ) { branchTaken := idEx.rs1Value === idEx.rs2Value }
     is(BranchType.BNE) { branchTaken := idEx.rs1Value =/= idEx.rs2Value }
-    is(BranchType.BLT) { branchTaken := idEx.rs1Value.asSInt < idEx.rs2Value.asSInt }
-    is(BranchType.BGE) { branchTaken := idEx.rs1Value.asSInt >= idEx.rs2Value.asSInt }
+    is(BranchType.BLT) {
+      branchTaken := idEx.rs1Value.asSInt < idEx.rs2Value.asSInt
+    }
+    is(BranchType.BGE) {
+      branchTaken := idEx.rs1Value.asSInt >= idEx.rs2Value.asSInt
+    }
     is(BranchType.BLTU) { branchTaken := idEx.rs1Value < idEx.rs2Value }
     is(BranchType.BGEU) { branchTaken := idEx.rs1Value >= idEx.rs2Value }
   }
@@ -109,7 +114,8 @@ class Pipeline3(
     is(WritebackSel.IMM) { writebackData := idEx.imm }
   }
 
-  val writebackEnable = idEx.valid && !idEx.signals.illegal && idEx.signals.regWrite
+  val writebackEnable =
+    idEx.valid && !idEx.signals.illegal && idEx.signals.regWrite
 
   regFile.io.rs1 := ifIdInstr(19, 15)
   regFile.io.rs2 := ifIdInstr(24, 20)
@@ -124,8 +130,16 @@ class Pipeline3(
 
   val idRs1 = ifIdInstr(19, 15)
   val idRs2 = ifIdInstr(24, 20)
-  val forwardedRs1 = Mux(writebackEnable && idEx.rd =/= 0.U && idEx.rd === idRs1, writebackData, regFile.io.readData1)
-  val forwardedRs2 = Mux(writebackEnable && idEx.rd =/= 0.U && idEx.rd === idRs2, writebackData, regFile.io.readData2)
+  val forwardedRs1 = Mux(
+    writebackEnable && idEx.rd =/= 0.U && idEx.rd === idRs1,
+    writebackData,
+    regFile.io.readData1
+  )
+  val forwardedRs2 = Mux(
+    writebackEnable && idEx.rd =/= 0.U && idEx.rd === idRs2,
+    writebackData,
+    regFile.io.readData2
+  )
   val decodedMemAddress = (forwardedRs1.asSInt + immGen.io.imm.asSInt).asUInt
 
   pcReg := pcNext

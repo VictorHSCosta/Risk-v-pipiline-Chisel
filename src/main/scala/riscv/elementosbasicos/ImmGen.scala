@@ -3,11 +3,10 @@ package riscv.elementosbasicos
 import chisel3._
 import chisel3.util._
 
-/**
-  * Gerador de imediatos para instrucoes RV32I.
+/** Gerador de imediatos para instrucoes RV32I.
   *
-  * Recebe a instrucao de 32 bits e devolve o imediato de 32 bits
-  * no formato correto (com extensao de sinal quando aplicavel).
+  * Recebe a instrucao de 32 bits e devolve o imediato de 32 bits no formato
+  * correto (com extensao de sinal quando aplicavel).
   */
 class ImmGen extends Module {
   val io = IO(new Bundle {
@@ -23,9 +22,16 @@ class ImmGen extends Module {
   // Extracao dos imediatos brutos.
   val immI = io.instr(31, 20)
   val immS = Cat(io.instr(31, 25), io.instr(11, 7))
-  val immB = Cat(io.instr(31), io.instr(7), io.instr(30, 25), io.instr(11, 8), 0.U(1.W))
+  val immB =
+    Cat(io.instr(31), io.instr(7), io.instr(30, 25), io.instr(11, 8), 0.U(1.W))
   val immU = Cat(io.instr(31, 12), 0.U(12.W))
-  val immJ = Cat(io.instr(31), io.instr(19, 12), io.instr(20), io.instr(30, 21), 0.U(1.W))
+  val immJ = Cat(
+    io.instr(31),
+    io.instr(19, 12),
+    io.instr(20),
+    io.instr(30, 21),
+    0.U(1.W)
+  )
 
   // Extensao de sinal para 32 bits.
   val signExtI = Cat(Fill(20, immI(11)), immI)

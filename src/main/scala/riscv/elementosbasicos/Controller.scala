@@ -23,7 +23,7 @@ class Controller extends Module {
     val opcode = Input(UInt(7.W))
     val funct3 = Input(UInt(3.W))
     val funct7 = Input(UInt(7.W))
-    
+
     val signals = Output(new ControlSignals)
   })
 
@@ -50,7 +50,9 @@ class Controller extends Module {
       switch(io.funct3) {
         is("b000".U) {
           when(io.funct7 === "b0000000".U) { io.signals.aluOp := ALUOp.ADD }
-            .elsewhen(io.funct7 === "b0100000".U) { io.signals.aluOp := ALUOp.SUB }
+            .elsewhen(io.funct7 === "b0100000".U) {
+              io.signals.aluOp := ALUOp.SUB
+            }
             .otherwise { illegal := true.B }
         }
         is("b001".U) {
@@ -71,7 +73,9 @@ class Controller extends Module {
         }
         is("b101".U) {
           when(io.funct7 === "b0000000".U) { io.signals.aluOp := ALUOp.SRL }
-            .elsewhen(io.funct7 === "b0100000".U) { io.signals.aluOp := ALUOp.SRA }
+            .elsewhen(io.funct7 === "b0100000".U) {
+              io.signals.aluOp := ALUOp.SRA
+            }
             .otherwise { illegal := true.B }
         }
         is("b110".U) {
@@ -100,7 +104,9 @@ class Controller extends Module {
         is("b100".U) { io.signals.aluOp := ALUOp.XOR }
         is("b101".U) {
           when(io.funct7 === "b0000000".U) { io.signals.aluOp := ALUOp.SRL }
-            .elsewhen(io.funct7 === "b0100000".U) { io.signals.aluOp := ALUOp.SRA }
+            .elsewhen(io.funct7 === "b0100000".U) {
+              io.signals.aluOp := ALUOp.SRA
+            }
             .otherwise { illegal := true.B }
         }
         is("b110".U) { io.signals.aluOp := ALUOp.OR }
@@ -127,8 +133,10 @@ class Controller extends Module {
           io.signals.memUnsigned := true.B
         }
       }
-      when(!(io.funct3 === "b000".U || io.funct3 === "b001".U || io.funct3 === "b010".U ||
-          io.funct3 === "b100".U || io.funct3 === "b101".U)) {
+      when(
+        !(io.funct3 === "b000".U || io.funct3 === "b001".U || io.funct3 === "b010".U ||
+          io.funct3 === "b100".U || io.funct3 === "b101".U)
+      ) {
         illegal := true.B
       }
     }
@@ -143,7 +151,9 @@ class Controller extends Module {
         is("b001".U) { io.signals.memSize := MemorySize.HALF }
         is("b010".U) { io.signals.memSize := MemorySize.WORD }
       }
-      when(!(io.funct3 === "b000".U || io.funct3 === "b001".U || io.funct3 === "b010".U)) {
+      when(
+        !(io.funct3 === "b000".U || io.funct3 === "b001".U || io.funct3 === "b010".U)
+      ) {
         illegal := true.B
       }
     }
@@ -176,8 +186,10 @@ class Controller extends Module {
           io.signals.aluOp := ALUOp.SLTU
         }
       }
-      when(!(io.funct3 === "b000".U || io.funct3 === "b001".U || io.funct3 === "b100".U ||
-          io.funct3 === "b101".U || io.funct3 === "b110".U || io.funct3 === "b111".U)) {
+      when(
+        !(io.funct3 === "b000".U || io.funct3 === "b001".U || io.funct3 === "b100".U ||
+          io.funct3 === "b101".U || io.funct3 === "b110".U || io.funct3 === "b111".U)
+      ) {
         illegal := true.B
       }
     }

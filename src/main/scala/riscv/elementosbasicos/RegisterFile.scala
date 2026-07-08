@@ -3,13 +3,12 @@ package riscv.elementosbasicos
 import chisel3._
 import chisel3.util._
 
-/**
-  * Banco de registradores RV32I (32 registradores x 32 bits).
+/** Banco de registradores RV32I (32 registradores x 32 bits).
   *
   * Regras RISC-V atendidas:
-  * - Duas portas de leitura combinacionais (rs1, rs2).
-  * - Uma porta de escrita síncrona (rd, writeData) controlada por regWrite.
-  * - Registrador x0 é imutável e sempre retorna zero.
+  *   - Duas portas de leitura combinacionais (rs1, rs2).
+  *   - Uma porta de escrita síncrona (rd, writeData) controlada por regWrite.
+  *   - Registrador x0 é imutável e sempre retorna zero.
   */
 class RegisterFile extends Module {
   val io = IO(new Bundle {

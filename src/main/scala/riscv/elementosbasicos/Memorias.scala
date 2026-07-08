@@ -4,16 +4,15 @@ import chisel3._
 import chisel3.util._
 import chisel3.util.experimental.loadMemoryFromFileInline
 
-/**
-  * Memoria de instrucoes somente leitura.
+/** Memoria de instrucoes somente leitura.
   *
   * O endereco chega em bytes, mas cada instrucao tem 4 bytes. Por isso os bits
   * 1 e 0 sao ignorados para converter endereco de byte em indice de palavra.
   */
 class InstructionMemory(
-  depthWords: Int = 1024,
-  initialData: Seq[Long] = Seq.empty,
-  programFile: String = ""
+    depthWords: Int = 1024,
+    initialData: Seq[Long] = Seq.empty,
+    programFile: String = ""
 ) extends Module {
   require(depthWords > 0, "depthWords deve ser maior que zero")
   require(
@@ -39,8 +38,7 @@ class InstructionMemory(
   }
 }
 
-/**
-  * Memoria de dados byte-addressable.
+/** Memoria de dados byte-addressable.
   *
   * Ela guarda bytes internamente para conseguir implementar acessos de 8, 16 e
   * 32 bits. Os dados sao little-endian: o byte menos significativo fica no

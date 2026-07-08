@@ -54,6 +54,38 @@ Rode apenas o teste da ULA:
 sbt "testOnly riscv.ULATest"
 ```
 
+## CI e formatacao
+
+O projeto usa GitHub Actions para validar o codigo a cada `push` e
+`pull_request`. O workflow fica em:
+
+```text
+.github/workflows/ci.yml
+```
+
+O CI roda:
+
+```bash
+sbt scalafmtCheckAll
+sbt test
+```
+
+Para rodar a mesma verificacao localmente:
+
+```bash
+sbt scalafmtCheckAll test
+```
+
+Para formatar automaticamente os arquivos Scala/Chisel:
+
+```bash
+sbt scalafmtAll
+```
+
+Sobre linter: para Chisel, o mais comum neste projeto e tratar o codigo como
+Scala e usar `scalafmt` para padronizar estilo. Erros estruturais do circuito
+continuam sendo pegos por `sbt compile` e pelos testes com `chiseltest`.
+
 ## Gerando Verilog e simulando com Icarus/GTKWave
 
 Este fluxo gera o Verilog do `Pipeline3`, carrega um programa em hexadecimal,
@@ -233,7 +265,8 @@ gtkwave pipeline.vcd &
 ## Fluxo recomendado no dia a dia
 
 1. Editar o modulo em `src/main/scala/riscv/elementosbasicos/`.
-2. Rodar `sbt test`.
+2. Rodar `sbt scalafmtAll`.
+3. Rodar `sbt scalafmtCheckAll test`.
 
 ## Escopo RV32I atual
 
@@ -268,3 +301,4 @@ Falha de compilacao em teste:
 - Scala `2.13.14`
 - Chisel `3.6.1`
 - chiseltest `0.6.1`
+- Scalafmt `3.10.7`
