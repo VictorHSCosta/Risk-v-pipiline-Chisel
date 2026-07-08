@@ -3,11 +3,10 @@ package riscv.elementosbasicos
 import chisel3._
 import chisel3.util._
 
-/**
-  * Gerador de imediatos para instrucoes RV32I.
+/** Gerador de imediatos para instrucoes RV32I.
   *
-  * Recebe a instrucao de 32 bits e devolve o imediato de 32 bits
-  * no formato correto (com extensao de sinal quando aplicavel).
+  * Recebe a instrucao de 32 bits e devolve o imediato de 32 bits no formato
+  * correto (com extensao de sinal quando aplicavel).
   */
 class ImmGen extends Module {
   val io = IO(new Bundle {
@@ -15,15 +14,24 @@ class ImmGen extends Module {
     val imm = Output(UInt(32.W))
   })
 
+  import RV32I.Opcode
+
   // Opcode: 7 bits menos significativos da instrucao.
   val opcode = io.instr(6, 0)
 
   // Extracao dos imediatos brutos.
   val immI = io.instr(31, 20)
   val immS = Cat(io.instr(31, 25), io.instr(11, 7))
-  val immB = Cat(io.instr(31), io.instr(7), io.instr(30, 25), io.instr(11, 8), 0.U(1.W))
+  val immB =
+    Cat(io.instr(31), io.instr(7), io.instr(30, 25), io.instr(11, 8), 0.U(1.W))
   val immU = Cat(io.instr(31, 12), 0.U(12.W))
-  val immJ = Cat(io.instr(31), io.instr(19, 12), io.instr(20), io.instr(30, 21), 0.U(1.W))
+  val immJ = Cat(
+    io.instr(31),
+    io.instr(19, 12),
+    io.instr(20),
+    io.instr(30, 21),
+    0.U(1.W)
+  )
 
   // Extensao de sinal para 32 bits.
   val signExtI = Cat(Fill(20, immI(11)), immI)
@@ -35,27 +43,27 @@ class ImmGen extends Module {
 
   switch(opcode) {
     // Tipo I: loads, arith-immediate, jalr
-    is("b0000011".U, "b0010011".U, "b1100111".U) {
+    is(Opcode.LOAD, Opcode.OP_IMM, Opcode.JALR) {
       io.imm := signExtI
     }
 
     // Tipo S: stores
-    is("b0100011".U) {
+    is(Opcode.STORE) {
       io.imm := signExtS
     }
 
     // Tipo B: branches
-    is("b1100011".U) {
+    is(Opcode.BRANCH) {
       io.imm := signExtB
     }
 
     // Tipo U: lui, auipc
-    is("b0110111".U, "b0010111".U) {
+    is(Opcode.LUI, Opcode.AUIPC) {
       io.imm := immU
     }
 
     // Tipo J: jal
-    is("b1101111".U) {
+    is(Opcode.JAL) {
       io.imm := signExtJ
     }
   }

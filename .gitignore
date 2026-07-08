@@ -2,23 +2,55 @@
 target/
 project/target/
 project/project/
+out/
+dist/
 
 # Bloop / Metals / Scala CLI
+.bsp/
 .bloop/
 .metals/
 .scala-build/
+.ammonite/
+.coursier/
 
 # IDE and OS files
 .idea/
 .vscode/
 *.swp
 *.swo
+*~
 .DS_Store
+.codex
+.agents
+cs
 
 # Chisel/FIRRTL/Verilog generated artifacts
 *.fir
+*.firrtl
 *.anno.json
 *.v
+*.sv
+!modelsim/tb_pipeline3.v
+*.vcd
+*.fst
+*.fstd
+*.gtkw
+*.out
+*.vvp
+generated/
 
 # Test outputs and temporary run directories
 test_run_dir/
+test_run_dir*/
+*.log
+*.tmp
+*.bak
+
+# Local example workspace ignored by this repository.
+exemplo/
+
+# model sim work fold
+assembly_code
+work/
+transcript
+vsim.wlf

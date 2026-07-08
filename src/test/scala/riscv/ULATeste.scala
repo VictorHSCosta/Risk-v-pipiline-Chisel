@@ -13,7 +13,7 @@ class ULATest extends AnyFlatSpec with ChiselScalatestTester {
   behavior of "Unidade Lógica e Aritmética (ULA) do RISC-V"
 
   // Máscara para forçar representação de 32 bits em valores Scala/Long.
-  private def u32(x: Long): BigInt = BigInt(x & 0xFFFFFFFFL)
+  private def u32(x: Long): BigInt = BigInt(x & 0xffffffffL)
 
   private def runCase(
       dut: ULA,
@@ -27,7 +27,9 @@ class ULATest extends AnyFlatSpec with ChiselScalatestTester {
     val inB = u32(b)
     val exp = u32(expected)
 
-    println(s"[$opName] A=$a (0x${inA.toString(16)}), B=$b (0x${inB.toString(16)})")
+    println(
+      s"[$opName] A=$a (0x${inA.toString(16)}), B=$b (0x${inB.toString(16)})"
+    )
 
     dut.io.a.poke(inA.U(32.W))
     dut.io.b.poke(inB.U(32.W))
@@ -35,7 +37,9 @@ class ULATest extends AnyFlatSpec with ChiselScalatestTester {
     dut.clock.step(1)
 
     val got = dut.io.result.peekInt()
-    println(s"[$opName] Resultado: $got (0x${got.toString(16)}), esperado: $exp (0x${exp.toString(16)})")
+    println(
+      s"[$opName] Resultado: $got (0x${got.toString(16)}), esperado: $exp (0x${exp.toString(16)})"
+    )
     dut.io.result.expect(exp.U(32.W))
   }
 
@@ -45,22 +49,22 @@ class ULATest extends AnyFlatSpec with ChiselScalatestTester {
 
       // ADD
       runCase(dut, "ADD", ADD, 10, 5, 15)
-      runCase(dut, "ADD", ADD, 0xFFFFFFFFL, 1, 0)
+      runCase(dut, "ADD", ADD, 0xffffffffL, 1, 0)
 
       // SUB
       runCase(dut, "SUB", SUB, 20, 8, 12)
-      runCase(dut, "SUB", SUB, 0, 1, 0xFFFFFFFFL)
+      runCase(dut, "SUB", SUB, 0, 1, 0xffffffffL)
 
       // AND
-      runCase(dut, "AND", AND, 0xF0F0F0F0L, 0x0FF00FF0L, 0x00F000F0L)
-      runCase(dut, "AND", AND, 0xAAAAAAAA, 0x55555555, 0)
+      runCase(dut, "AND", AND, 0xf0f0f0f0L, 0x0ff00ff0L, 0x00f000f0L)
+      runCase(dut, "AND", AND, 0xaaaaaaaa, 0x55555555, 0)
 
       // OR
-      runCase(dut, "OR", OR, 0xF0F00000L, 0x00000FF0L, 0xF0F00FF0L)
+      runCase(dut, "OR", OR, 0xf0f00000L, 0x00000ff0L, 0xf0f00ff0L)
       runCase(dut, "OR", OR, 0, 0, 0)
 
       // XOR
-      runCase(dut, "XOR", XOR, 0xAAAAAAAA, 0x55555555, 0xFFFFFFFFL)
+      runCase(dut, "XOR", XOR, 0xaaaaaaaa, 0x55555555, 0xffffffffL)
       runCase(dut, "XOR", XOR, 0x12345678L, 0x12345678L, 0)
 
       // SLL (usa apenas b(4,0))
@@ -72,8 +76,8 @@ class ULATest extends AnyFlatSpec with ChiselScalatestTester {
       runCase(dut, "SRL", SRL, 0x80000000L, 32, 0x80000000L) // 32 -> 0
 
       // SRA (shift aritmetico preserva sinal)
-      runCase(dut, "SRA", SRA, 0xFFFFFFF0L, 2, 0xFFFFFFFCL) // -16 >> 2 = -4
-      runCase(dut, "SRA", SRA, 0x7FFFFFF0L, 3, 0x0FFFFFFEL)
+      runCase(dut, "SRA", SRA, 0xfffffff0L, 2, 0xfffffffcL) // -16 >> 2 = -4
+      runCase(dut, "SRA", SRA, 0x7ffffff0L, 3, 0x0ffffffeL)
 
       // SLT (comparacao com sinal)
       runCase(dut, "SLT", SLT, -5, 2, 1)

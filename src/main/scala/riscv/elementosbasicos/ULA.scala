@@ -3,13 +3,13 @@ package riscv.elementosbasicos
 import chisel3._
 import chisel3.util._
 
-/**
-  * Códigos de operação (opcodes) aceitos pela [[ULA]].
+/** Códigos de operação (opcodes) aceitos pela [[ULA]].
   *
   * Cada constante é codificada em 4 bits e usada na entrada `io.op` para
   * selecionar qual operação combinacional será executada.
   */
 object ALUOp {
+
   /** Soma: `A + B` */
   val ADD = 0.U(4.W)
 
@@ -44,15 +44,16 @@ object ALUOp {
 // Importa os opcodes para uso direto no switch.
 import ALUOp._
 
-/**
-  * Unidade Lógica e Aritmética (ULA) de 32 bits para um núcleo RISC-V.
+/** Unidade Lógica e Aritmética (ULA) de 32 bits para um núcleo RISC-V.
   *
   * O módulo é puramente combinacional: para cada par de operandos (`a`, `b`) e
   * opcode (`op`), produz imediatamente `result` conforme a operação escolhida.
   */
 class ULA extends Module {
+
   /** Interface de entrada/saída da ULA. */
   val io = IO(new Bundle {
+
     /** Operando A (32 bits). */
     val a = Input(UInt(32.W))
 
@@ -69,8 +70,7 @@ class ULA extends Module {
   // Valor padrão para evitar latch caso algum opcode não seja tratado.
   val res = WireDefault(0.U(32.W))
 
-  /**
-    * Seleção combinacional da operação da ULA.
+  /** Seleção combinacional da operação da ULA.
     *
     * Para shifts no RV32, apenas `b(4, 0)` é usado como quantidade de
     * deslocamento (`shamt`), permitindo valores de 0 a 31.
@@ -80,7 +80,7 @@ class ULA extends Module {
     is(ADD) { res := io.a + io.b } // Gera um Somador em hardware
     is(SUB) { res := io.a - io.b } // Gera um Subtrator
     is(AND) { res := io.a & io.b } // Gera portas lógicas AND bit a bit
-    is(OR)  { res := io.a | io.b } // Gera portas lógicas OR bit a bit
+    is(OR) { res := io.a | io.b } // Gera portas lógicas OR bit a bit
     is(XOR) { res := io.a ^ io.b } // Gera portas lógicas XOR bit a bit
 
     is(SLL) { res := io.a << io.b(4, 0) } // Desloca A para a esquerda.

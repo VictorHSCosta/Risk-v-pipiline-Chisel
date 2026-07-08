@@ -18,36 +18,36 @@ class ImmGenTest extends AnyFlatSpec with ChiselScalatestTester {
   }
 
   private def mkI(imm12: Int, opcode: Int): BigInt = {
-    (BigInt(imm12 & 0xFFF) << 20) | BigInt(opcode & 0x7F)
+    (BigInt(imm12 & 0xfff) << 20) | BigInt(opcode & 0x7f)
   }
 
   private def mkS(imm12: Int, opcode: Int): BigInt = {
-    val imm = imm12 & 0xFFF
-    (BigInt((imm >> 5) & 0x7F) << 25) |
-    (BigInt(imm & 0x1F) << 7) |
-    BigInt(opcode & 0x7F)
+    val imm = imm12 & 0xfff
+    (BigInt((imm >> 5) & 0x7f) << 25) |
+      (BigInt(imm & 0x1f) << 7) |
+      BigInt(opcode & 0x7f)
   }
 
   private def mkB(imm13: Int, opcode: Int): BigInt = {
-    val imm = imm13 & 0x1FFF
+    val imm = imm13 & 0x1fff
     (BigInt((imm >> 12) & 0x1) << 31) |
-    (BigInt((imm >> 11) & 0x1) << 7) |
-    (BigInt((imm >> 5) & 0x3F) << 25) |
-    (BigInt((imm >> 1) & 0xF) << 8) |
-    BigInt(opcode & 0x7F)
+      (BigInt((imm >> 11) & 0x1) << 7) |
+      (BigInt((imm >> 5) & 0x3f) << 25) |
+      (BigInt((imm >> 1) & 0xf) << 8) |
+      BigInt(opcode & 0x7f)
   }
 
   private def mkU(imm20: Int, opcode: Int): BigInt = {
-    (BigInt(imm20 & 0xFFFFF) << 12) | BigInt(opcode & 0x7F)
+    (BigInt(imm20 & 0xfffff) << 12) | BigInt(opcode & 0x7f)
   }
 
   private def mkJ(imm21: Int, opcode: Int): BigInt = {
-    val imm = imm21 & 0x1FFFFF
+    val imm = imm21 & 0x1fffff
     (BigInt((imm >> 20) & 0x1) << 31) |
-    (BigInt((imm >> 12) & 0xFF) << 12) |
-    (BigInt((imm >> 11) & 0x1) << 20) |
-    (BigInt((imm >> 1) & 0x3FF) << 21) |
-    BigInt(opcode & 0x7F)
+      (BigInt((imm >> 12) & 0xff) << 12) |
+      (BigInt((imm >> 11) & 0x1) << 20) |
+      (BigInt((imm >> 1) & 0x3ff) << 21) |
+      BigInt(opcode & 0x7f)
   }
 
   private def runCase(dut: ImmGen, instr: BigInt, expected: BigInt): Unit = {
@@ -59,11 +59,11 @@ class ImmGenTest extends AnyFlatSpec with ChiselScalatestTester {
   it should "gerar imediato correto para cada formato RV32I" in {
     test(new ImmGen) { dut =>
       // I-type: addi-like, imm = -1
-      val iImm = 0xFFF
+      val iImm = 0xfff
       runCase(dut, mkI(iImm, 0x13), signExtend(iImm, 12))
 
       // S-type: store-like, imm = -16
-      val sImm = 0xFF0
+      val sImm = 0xff0
       runCase(dut, mkS(sImm, 0x23), signExtend(sImm, 12))
 
       // B-type: branch-like, imm = +16
@@ -71,12 +71,12 @@ class ImmGenTest extends AnyFlatSpec with ChiselScalatestTester {
       runCase(dut, mkB(bImm, 0x63), signExtend(bImm, 13))
 
       // U-type: lui-like
-      val uImm = 0xABCDE
+      val uImm = 0xabcde
       runCase(dut, mkU(uImm, 0x37), BigInt(uImm) << 12)
 
       // J-type: jal-like, imm = -4
-      val jImm = 0x1FFFFC
-      runCase(dut, mkJ(jImm, 0x6F), signExtend(jImm, 21))
+      val jImm = 0x1ffffc
+      runCase(dut, mkJ(jImm, 0x6f), signExtend(jImm, 21))
     }
   }
 
