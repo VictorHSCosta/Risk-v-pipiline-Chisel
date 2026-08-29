@@ -2,6 +2,10 @@ name := "aprendendo-tcc"
 version := "0.1.0"
 scalaVersion := "2.13.14"
 
+Compile / scalaSource := baseDirectory.value / "app" / "main" / "scala"
+Test / scalaSource := baseDirectory.value / "app" / "test" / "scala"
+scalafmtConfig := baseDirectory.value / "config" / ".scalafmt.conf"
+
 scalacOptions ++= Seq(
   "-deprecation",
   "-feature",

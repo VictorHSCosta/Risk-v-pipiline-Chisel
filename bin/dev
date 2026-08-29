@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
+PROGRAM="${PROGRAM:-programs/rv32i_smoke.hex}"
+VERILOG_DIR="${VERILOG_DIR:-output/verilog}"
+SIM="output/pipeline3_sim.out"
+TESTBENCH="app/sim/tb_pipeline3.v"
+
+cd "$ROOT"
+
+need() {
+  command -v "$1" >/dev/null || {
+    echo "Comando ausente: $1" >&2
+    exit 1
+  }
+}
+
+building() {
+  need sbt
+  test -f "$PROGRAM" || { echo "Programa ausente: $PROGRAM" >&2; exit 1; }
+  rm -rf "$VERILOG_DIR"
+  mkdir -p output
+  sbt "runMain riscv.pipeline.GeneratePipeline3Verilog $PROGRAM $VERILOG_DIR"
+}
+
+run() {
+  need iverilog
+  need vvp
+  need gtkwave
+  building
+  iverilog -g2012 -o "$SIM" "$VERILOG_DIR/Pipeline3.v" "$TESTBENCH"
+  vvp "$SIM"
+  gtkwave output/pipeline.vcd >/dev/null 2>&1 &
+}
+
+linter() {
+  need sbt
+  sbt scalafmtCheckAll
+}
+
+test() {
+  need sbt
+  sbt test
+}
+
+case "${1:-}" in
+  building|run|linter|test) "$1" ;;
+  *) echo "Uso: pnpm run {building|run|linter|test}" >&2; exit 2 ;;
+esac

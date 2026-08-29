@@ -1,0 +1,11 @@
+{
+  "name": "riscv-chisel",
+  "private": true,
+  "packageManager": "pnpm@11.5.1",
+  "scripts": {
+    "building": "./bin/dev building",
+    "run": "./bin/dev run",
+    "linter": "./bin/dev linter",
+    "test": "./bin/dev test"
+  }
+}

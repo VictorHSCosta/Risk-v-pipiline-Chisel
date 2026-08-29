@@ -25,20 +25,19 @@ dist/
 cs
 
 # Chisel/FIRRTL/Verilog generated artifacts
+output/
 *.fir
 *.firrtl
 *.anno.json
 *.v
 *.sv
-!modelsim/tb_pipeline3.v
+!app/sim/tb_pipeline3.v
 *.vcd
 *.fst
 *.fstd
 *.gtkw
 *.out
 *.vvp
-generated/
-
 # Test outputs and temporary run directories
 test_run_dir/
 test_run_dir*/
