@@ -5,11 +5,15 @@ CPU RISC-V RV32I educacional em Chisel/Scala.
 ## Comandos
 
 ```bash
+npm run setup      # instala as ferramentas Ubuntu (usa sudo)
 pnpm run building  # gera Verilog em output/verilog/
 pnpm run run       # simula e abre o GTKWave
 pnpm run linter    # verifica formatacao
 pnpm run test      # roda os testes Chisel
 ```
+
+`npm run setup` e `pnpm run setup` sao equivalentes. Depois de executar o
+setup uma vez, o fluxo normal começa em `npm run building`.
 
 Requisitos: Java 21, sbt, pnpm, Icarus Verilog e GTKWave.
 

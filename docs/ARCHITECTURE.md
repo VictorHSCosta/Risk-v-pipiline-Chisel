@@ -22,5 +22,8 @@ obrigatorio do sbt. O `build.sbt` aponta as fontes Scala para `app/`.
 3. `linter` roda o Scalafmt em modo de verificacao.
 4. `test` roda os testes Chisel/Scala.
 
+`setup` instala as ferramentas de sistema do Ubuntu. Ele fica separado do
+`pnpm install` para nao executar `sudo apt` automaticamente.
+
 Somente fontes, documentacao, configuracao e programas devem ser enviados ao
 GitHub. Verilog, FIRRTL, VCD e executaveis ficam em `output/`.

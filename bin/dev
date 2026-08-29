@@ -6,6 +6,7 @@ PROGRAM="${PROGRAM:-programs/rv32i_smoke.hex}"
 VERILOG_DIR="${VERILOG_DIR:-output/verilog}"
 SIM="output/pipeline3_sim.out"
 TESTBENCH="app/sim/tb_pipeline3.v"
+SBT_KEY_URL="https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x2EE0EA64E40A89B84B2DF73499E82A75642AC823"
 
 cd "$ROOT"
 
@@ -44,7 +45,44 @@ test() {
   sbt test
 }
 
+setup() {
+  need apt-get
+
+  if (( EUID == 0 )); then
+    SUDO=()
+  else
+    need sudo
+    SUDO=(sudo)
+  fi
+
+  apt_update() {
+    if ! "${SUDO[@]}" apt-get update; then
+      echo "Aviso: um repositorio externo falhou; continuando com os repositorios validos." >&2
+    fi
+  }
+
+  apt_update
+  "${SUDO[@]}" apt-get install -y curl gnupg ca-certificates iverilog gtkwave
+
+  if ! command -v java >/dev/null || ! java -version 2>&1 | grep -q '"21'; then
+    "${SUDO[@]}" apt-get install -y openjdk-21-jdk
+  fi
+
+  if ! command -v sbt >/dev/null; then
+    "${SUDO[@]}" install -d -m 0755 /etc/apt/keyrings
+    curl -fsSL "$SBT_KEY_URL" |
+      "${SUDO[@]}" gpg --dearmor --yes -o /etc/apt/keyrings/scalasbt.gpg
+    printf '%s\n' \
+      'deb [signed-by=/etc/apt/keyrings/scalasbt.gpg] https://repo.scala-sbt.org/scalasbt/debian all main' |
+      "${SUDO[@]}" tee /etc/apt/sources.list.d/sbt.list >/dev/null
+    apt_update
+    "${SUDO[@]}" apt-get install -y sbt
+  fi
+
+  echo "Ambiente pronto: Java, sbt, Icarus Verilog e GTKWave."
+}
+
 case "${1:-}" in
-  building|run|linter|test) "$1" ;;
-  *) echo "Uso: pnpm run {building|run|linter|test}" >&2; exit 2 ;;
+  setup|building|run|linter|test) "$1" ;;
+  *) echo "Uso: pnpm run {setup|building|run|linter|test}" >&2; exit 2 ;;
 esac
