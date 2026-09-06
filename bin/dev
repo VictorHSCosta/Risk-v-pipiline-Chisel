@@ -2,10 +2,10 @@
 set -euo pipefail
 
 ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
-PROGRAM="${PROGRAM:-programs/rv32i_smoke.hex}"
+PROGRAM="${PROGRAM:-programs/rv32i_all.hex}"
 VERILOG_DIR="${VERILOG_DIR:-output/verilog}"
-SIM="output/pipeline3_sim.out"
-TESTBENCH="app/sim/tb_pipeline3.v"
+SIM="output/pipeline5_sim.out"
+TESTBENCH="app/sim/tb_pipeline5.v"
 SBT_KEY_URL="https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x2EE0EA64E40A89B84B2DF73499E82A75642AC823"
 
 cd "$ROOT"
@@ -19,20 +19,31 @@ need() {
 
 building() {
   need sbt
+  need iverilog
+  need vvp
   test -f "$PROGRAM" || { echo "Programa ausente: $PROGRAM" >&2; exit 1; }
   rm -rf "$VERILOG_DIR"
   mkdir -p output
-  sbt "runMain riscv.pipeline.GeneratePipeline3Verilog $PROGRAM $VERILOG_DIR"
+  # Processo isolado: nao reutiliza um servidor sbt com `test` pendente.
+  sbt --no-server "runMain riscv.pipeline.GeneratePipeline5Verilog $PROGRAM $VERILOG_DIR"
+  iverilog -g2012 -o "$SIM" "$VERILOG_DIR/Pipeline5.v" "$TESTBENCH"
+  vvp "$SIM"
 }
 
 run() {
-  need iverilog
-  need vvp
   need gtkwave
-  building
-  iverilog -g2012 -o "$SIM" "$VERILOG_DIR/Pipeline3.v" "$TESTBENCH"
-  vvp "$SIM"
-  gtkwave output/pipeline.vcd >/dev/null 2>&1 &
+  test -f output/pipeline.vcd || {
+    echo "Arquivo ausente: output/pipeline.vcd. Execute npm run building primeiro." >&2
+    exit 1
+  }
+  if [[ -z "${DISPLAY:-}" && -z "${WAYLAND_DISPLAY:-}" ]]; then
+    echo "GTKWave nao abriu porque esta sessao nao possui DISPLAY/WAYLAND_DISPLAY."
+    echo "Arquivo disponivel: output/pipeline.vcd"
+    return
+  fi
+  nohup env -u LD_LIBRARY_PATH -u LD_PRELOAD "$(command -v gtkwave)" \
+    "$ROOT/output/pipeline.vcd" >output/gtkwave.log 2>&1 &
+  echo "GTKWave aberto; log em output/gtkwave.log"
 }
 
 linter() {

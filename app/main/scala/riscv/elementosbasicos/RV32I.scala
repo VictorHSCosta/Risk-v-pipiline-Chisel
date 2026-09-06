@@ -13,6 +13,8 @@ object RV32I {
     val BRANCH = "b1100011".U(7.W)
     val JALR = "b1100111".U(7.W)
     val JAL = "b1101111".U(7.W)
+    val FENCE = "b0001111".U(7.W)
+    val SYSTEM = "b1110011".U(7.W)
   }
 
   object BranchType {
@@ -47,5 +49,15 @@ object RV32I {
     val MEM = 1.U(2.W)
     val PC4 = 2.U(2.W)
     val IMM = 3.U(2.W)
+  }
+
+  object TrapCause {
+    val NONE = 0.U(4.W)
+    val INSTRUCTION_MISALIGNED = 0.U(4.W)
+    val ILLEGAL_INSTRUCTION = 2.U(4.W)
+    val LOAD_MISALIGNED = 4.U(4.W)
+    val STORE_MISALIGNED = 6.U(4.W)
+    val BREAKPOINT = 3.U(4.W)
+    val ECALL_M = 11.U(4.W)
   }
 }

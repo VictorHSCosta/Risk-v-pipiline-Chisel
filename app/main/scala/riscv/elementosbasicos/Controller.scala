@@ -16,6 +16,8 @@ class ControlSignals extends Bundle {
   val jump = Bool()
   val jalr = Bool()
   val illegal = Bool()
+  val trap = Bool()
+  val trapCause = UInt(4.W)
 }
 
 class Controller extends Module {
@@ -23,6 +25,7 @@ class Controller extends Module {
     val opcode = Input(UInt(7.W))
     val funct3 = Input(UInt(3.W))
     val funct7 = Input(UInt(7.W))
+    val funct12 = Input(UInt(12.W))
 
     val signals = Output(new ControlSignals)
   })
@@ -40,6 +43,8 @@ class Controller extends Module {
   io.signals.writebackSel := WritebackSel.ALU
   io.signals.jump := false.B
   io.signals.jalr := false.B
+  io.signals.trap := false.B
+  io.signals.trapCause := TrapCause.NONE
   val illegal = WireDefault(true.B)
   io.signals.illegal := illegal
 
@@ -226,6 +231,23 @@ class Controller extends Module {
       io.signals.writebackSel := WritebackSel.PC4
       io.signals.aluOp := ALUOp.ADD
       illegal := io.funct3 =/= "b000".U
+    }
+
+    is(Opcode.FENCE) {
+      // A RAM interna e in-order; FENCE nao precisa de acao adicional.
+      illegal := io.funct3 =/= 0.U
+    }
+
+    is(Opcode.SYSTEM) {
+      when(io.funct3 === 0.U && io.funct12 === 0.U) {
+        illegal := false.B
+        io.signals.trap := true.B
+        io.signals.trapCause := TrapCause.ECALL_M
+      }.elsewhen(io.funct3 === 0.U && io.funct12 === 1.U) {
+        illegal := false.B
+        io.signals.trap := true.B
+        io.signals.trapCause := TrapCause.BREAKPOINT
+      }
     }
 
   }
