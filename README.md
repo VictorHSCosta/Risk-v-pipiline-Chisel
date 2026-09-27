@@ -91,6 +91,36 @@ Sobre linter: para Chisel, o mais comum neste projeto e tratar o codigo como
 Scala e usar `scalafmt` para padronizar estilo. Erros estruturais do circuito
 continuam sendo pegos por `sbt compile` e pelos testes com `chiseltest`.
 
+## Testes RV32I e leitura por ciclo
+
+A suíte `Rv32iArithmeticSpec`, `Rv32iControlSpec` e `Rv32iMemorySpec` testa as
+instruções inteiras RV32I com um nome por instrução. `Pipeline3TrapSpec` já testa
+`ECALL` e `EBREAK`. As extensões M, A, C e CSR ficam fora desta suíte básica.
+
+```bash
+sbt 'testOnly riscv.pipeline.Rv32iArithmeticSpec riscv.pipeline.Rv32iControlSpec riscv.pipeline.Rv32iMemorySpec riscv.pipeline.Pipeline3TrapSpec'
+```
+
+Para imprimir IF, ID, EX, operandos, imediato, controle, memória e writeback em
+cada ciclo dos testes automáticos:
+
+```bash
+RV32I_TRACE=1 sbt 'testOnly riscv.pipeline.Rv32iArithmeticSpec -- -z ADD'
+```
+
+Para carregar seu próprio HEX (uma instrução de 8 dígitos por linha, como no
+exemplo `src/test/resources/rv32i-add.hex`) e escolher quantos ciclos ler:
+
+```bash
+RV32I_HEX=src/test/resources/rv32i-add.hex RV32I_CYCLES=5 \
+  sbt 'testOnly riscv.pipeline.Rv32iHexTraceSpec'
+```
+
+O HEX é lido diretamente pelo teste; não precisa gerar Verilog. Cada ciclo
+mostra o PC e instrução buscada em IF, os registradores e sinais em ID, e os
+operandos, resultado e escrita em EX. O formato segue a
+[especificação RV32I](https://docs.riscv.org/reference/isa/v20260120/unpriv/rv32.html).
+
 ## Gerando Verilog e simulando com Icarus/GTKWave
 
 Este fluxo gera o Verilog do `Pipeline3`, carrega um programa em hexadecimal,

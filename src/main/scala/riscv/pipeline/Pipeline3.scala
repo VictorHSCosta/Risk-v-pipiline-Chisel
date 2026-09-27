@@ -221,8 +221,17 @@ class Pipeline3(
   // ============================================================
   // 10. HAZARD DETECTION (load-use)
   // ============================================================
-  val currentUsesRd = (idRs1 === idEx.rd && idRs1 =/= 0.U) ||
-                      (idRs2 === idEx.rd && idRs2 =/= 0.U)
+  val idOpcode = ifIdInstr(6, 0)
+  val usesRs1 = idOpcode === Opcode.OP || idOpcode === Opcode.OP_IMM ||
+                idOpcode === Opcode.LOAD || idOpcode === Opcode.STORE ||
+                idOpcode === Opcode.BRANCH || idOpcode === Opcode.JALR ||
+                idOpcode === Opcode.ATOMIC ||
+                (idOpcode === Opcode.SYSTEM && controller.io.signals.csrOp =/= 0.U &&
+                  !controller.io.signals.csrOp(2))
+  val usesRs2 = idOpcode === Opcode.OP || idOpcode === Opcode.STORE ||
+                idOpcode === Opcode.BRANCH || idOpcode === Opcode.ATOMIC
+  val currentUsesRd = (usesRs1 && idRs1 === idEx.rd && idRs1 =/= 0.U) ||
+                      (usesRs2 && idRs2 === idEx.rd && idRs2 =/= 0.U)
   val isLoadInEx = idEx.valid &&
                    !idEx.signals.illegal &&
                    idEx.signals.writebackSel === WritebackSel.MEM &&

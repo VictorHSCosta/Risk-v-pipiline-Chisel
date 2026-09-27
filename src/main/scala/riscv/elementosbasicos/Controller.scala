@@ -262,6 +262,11 @@ class Controller extends Module {
       illegal := io.funct3 =/= "b000".U
     }
 
+    // Pipeline único, sem acessos concorrentes: FENCE não precisa de ação extra.
+    is("b0001111".U) {
+      illegal := io.funct3 =/= "b000".U
+    }
+
     is(Opcode.ATOMIC) {
       switch(amoFunct5) {
         is("b00010".U) {  // funct7 = 0b00010 (0x02)
