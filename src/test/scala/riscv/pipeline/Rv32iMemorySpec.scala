@@ -5,29 +5,50 @@ class Rv32iMemorySpec extends Rv32iBench {
   behavior of "RV32I: loads e stores"
 
   private val loads = Seq(
-    ("LB", 0, 0, -128L), ("LH", 1, 1, -128L),
-    ("LW", 2, 2, -128L), ("LBU", 4, 0, 128L), ("LHU", 5, 1, 0xff80L)
+    ("LB", 0, 0, -128L),
+    ("LH", 1, 1, -128L),
+    ("LW", 2, 2, -128L),
+    ("LBU", 4, 0, 128L),
+    ("LHU", 5, 1, 0xff80L)
   )
   loads.foreach { case (name, loadSize, storeSize, result) =>
     it should s"executar $name com extensão correta" in {
-      val program = Seq(addi(1, 0, 64), addi(2, 0, -128),
-        s(storeSize, 1, 2), load(loadSize, 5, 1), nop)
+      val program = Seq(
+        addi(1, 0, 64),
+        addi(2, 0, -128),
+        s(storeSize, 1, 2),
+        load(loadSize, 5, 1),
+        nop
+      )
       check(program, Map(5 -> BigInt(result)))
     }
   }
 
-  private val stores = Seq(("SB", 0, 4, 128L, 1), ("SH", 1, 5, 0xff80L, 2), ("SW", 2, 2, -128L, 4))
+  private val stores =
+    Seq(("SB", 0, 4, 128L, 1), ("SH", 1, 5, 0xff80L, 2), ("SW", 2, 2, -128L, 4))
   stores.foreach { case (name, storeSize, loadSize, result, nextByte) =>
     it should s"executar $name e permitir leitura posterior" in {
-      val program = Seq(addi(1, 0, 64), addi(2, 0, -128),
-        s(storeSize, 1, 2), load(loadSize, 5, 1), load(4, 6, 1, nextByte), nop)
+      val program = Seq(
+        addi(1, 0, 64),
+        addi(2, 0, -128),
+        s(storeSize, 1, 2),
+        load(loadSize, 5, 1),
+        load(4, 6, 1, nextByte),
+        nop
+      )
       check(program, Map(5 -> BigInt(result), 6 -> BigInt(0)))
     }
   }
 
   it should "fazer um stall de um ciclo em dependência de LW" in {
-    val program = Seq(addi(1, 0, 64), addi(2, 0, 42), s(2, 1, 2),
-      load(2, 3, 1), r(0, rd = 5, rs1 = 3, rs2 = 2), nop)
+    val program = Seq(
+      addi(1, 0, 64),
+      addi(2, 0, 42),
+      s(2, 1, 2),
+      load(2, 3, 1),
+      r(0, rd = 5, rs1 = 3, rs2 = 2),
+      nop
+    )
     check(program, Map(5 -> BigInt(84)), expectStall = true)
   }
 
