@@ -12,6 +12,7 @@ class DecodeExecuteBundle extends Bundle {
   val valid = Bool()
   val pc = UInt(32.W)
   val instr = UInt(32.W)
+  val instrLength = UInt(3.W)
   val rs1 = UInt(5.W)
   val rs2 = UInt(5.W)
   val rd = UInt(5.W)
@@ -26,10 +27,10 @@ class DecodeExecuteBundle extends Bundle {
   val csrReadData = UInt(32.W)
 }
 
-/** Pipeline RV32I educacional de 3 estágios, inspirado no Wildcat.
+/** Pipeline RV32 com instruções comprimidas, de 3 estágios, inspirado no Wildcat.
   *
   * Estágios:
-  *   - IF: busca de instrução (instrMem + pcReg)
+  *   - IF: busca, alinhamento e descompressão (InstructionFetch + pcReg)
   *   - ID/RF: decodificação, leitura do banco de registradores e preparação
   *   - EX/MEM/WB: execução (ULA), acesso à memória e writeback
   *
@@ -84,6 +85,7 @@ class Pipeline3(
     )
   )
   val dataMem = Module(new DataMemory(depthWords = memoryWords))
+  val fetch = Module(new InstructionFetch)
   val regFile = Module(new RegisterFile)
   val immGen = Module(new ImmGen)
   val controller = Module(new Controller)
@@ -97,6 +99,9 @@ class Pipeline3(
   val pcReg = RegInit(0.U(32.W))
   val ifIdPc = RegInit(0.U(32.W))
   val ifIdInstr = RegInit(nop)
+  val ifIdValid = RegInit(false.B)
+  val ifIdLength = RegInit(4.U(3.W))
+  val ifIdIllegal = RegInit(false.B)
   val idEx = RegInit(0.U.asTypeOf(new DecodeExecuteBundle))
 
   // Registrador de WB para o load durante stall
@@ -145,9 +150,9 @@ class Pipeline3(
     interrupt_flag := InterruptCode.Timer0
   }
 
-  clint.io.pc := pcReg
+  clint.io.pc := ifIdPc
   clint.io.instr := ifIdInstr
-  clint.io.valid := !stallPipeline && !flushPipeline
+  clint.io.valid := ifIdValid && !ifIdIllegal && !stallPipeline && !flushPipeline
   clint.io.interrupt_flag := interrupt_flag
 
   // ============================================================
@@ -166,7 +171,12 @@ class Pipeline3(
   // ============================================================
   // 7. ESTÁGIO IF: busca de instrução
   // ============================================================
-  instrMem.io.address := pcReg
+  fetch.io.pc := pcReg
+  fetch.io.enable := !stallPipeline
+  fetch.io.flush := flushPipeline
+  fetch.io.memoryData := instrMem.io.readData
+  instrMem.io.address := fetch.io.memoryAddress
+  instrMem.io.readEnable := fetch.io.memoryReadEnable
 
   // ============================================================
   // 8. ESTÁGIO ID: decodificação e leitura do banco de registradores
@@ -247,7 +257,7 @@ class Pipeline3(
     idEx.signals.branchType === BranchType.NONE &&
     !idEx.signals.jump &&
     !idEx.signals.jalr
-  val loadUseHazard = isLoadInEx && currentUsesRd
+  val loadUseHazard = ifIdValid && !ifIdIllegal && isLoadInEx && currentUsesRd
   val hazardDetected = loadUseHazard
 
   stallPipeline := hazardDetected
@@ -295,7 +305,7 @@ class Pipeline3(
   val writebackData = WireDefault(ula.io.result)
   switch(idEx.signals.writebackSel) {
     is(WritebackSel.MEM) { writebackData := dataMem.io.readData }
-    is(WritebackSel.PC4) { writebackData := idEx.pc + 4.U }
+    is(WritebackSel.PC4) { writebackData := idEx.pc + idEx.instrLength }
     is(WritebackSel.IMM) { writebackData := idEx.imm }
     is(WritebackSel.CSR) { writebackData := idEx.csrReadData }
   }
@@ -375,36 +385,40 @@ class Pipeline3(
   // ============================================================
   // 16. ATUALIZAÇÃO DOS REGISTRADORES DE PIPELINE
   // ============================================================
-  val pcNext = WireDefault(pcReg + 4.U)
-  when(stallPipeline) {
-    pcNext := pcReg
-  }.elsewhen(controlRedirect) {
+  val pcNext = WireDefault(pcReg)
+  when(controlRedirect) {
     pcNext := redirectTarget
+  }.elsewhen(!stallPipeline && fetch.io.valid) {
+    pcNext := pcReg + fetch.io.length
   }
 
   pcReg := pcNext
 
-  when(stallPipeline) {
+  when(flushPipeline) {
+    lwWbValid := false.B
+    ifIdValid := false.B
+    ifIdIllegal := false.B
+    ifIdInstr := nop
+    idEx := 0.U.asTypeOf(new DecodeExecuteBundle)
+  }.elsewhen(stallPipeline) {
     // STALL: IF/ID congelados, lw avança para o registrador de WB
     lwWbValid := true.B
     lwWbRd := idEx.rd
     lwWbData := dataMem.io.readData
     idEx := 0.U.asTypeOf(new DecodeExecuteBundle)
-  }.elsewhen(flushPipeline || controlRedirect) {
-    // FLUSH: insere NOP no IF/ID e limpa o ID/EX
-    lwWbValid := false.B
-    ifIdPc := pcReg
-    ifIdInstr := nop
-    idEx := 0.U.asTypeOf(new DecodeExecuteBundle)
   }.otherwise {
     // ATUALIZAÇÃO NORMAL
     lwWbValid := false.B
     ifIdPc := pcReg
-    ifIdInstr := instrMem.io.readData
+    ifIdInstr := fetch.io.instr
+    ifIdValid := fetch.io.valid
+    ifIdLength := fetch.io.length
+    ifIdIllegal := fetch.io.illegal
 
-    idEx.valid := true.B
+    idEx.valid := ifIdValid
     idEx.pc := ifIdPc
     idEx.instr := ifIdInstr
+    idEx.instrLength := ifIdLength
     idEx.rs1 := idRs1
     idEx.rs2 := idRs2
     idEx.rd := ifIdInstr(11, 7)
@@ -414,6 +428,7 @@ class Pipeline3(
     idEx.memAddress := decodedMemAddress
     idEx.memWriteData := forwardedRs2
     idEx.signals := controller.io.signals
+    idEx.signals.illegal := controller.io.signals.illegal || ifIdIllegal
     idEx.csrAddress := ifIdInstr(31, 20)
     idEx.csrWriteData := csrWriteData
     idEx.csrReadData := csrReadData

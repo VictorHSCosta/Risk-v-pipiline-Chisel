@@ -56,7 +56,7 @@ class TracedPipeline3(program: Seq[Long], words: Int = 64)
   val probeIdEx = IO(Output(new DecodeExecuteBundle)); probeIdEx := idEx
   val probeIfIdPc = IO(Output(UInt(32.W))); probeIfIdPc := ifIdPc
   val probeFetchInstr = IO(Output(UInt(32.W)));
-  probeFetchInstr := instrMem.io.readData
+  probeFetchInstr := fetch.io.instr
 
   // Mostram os valores lidos ou encaminhados para a instrução que está sendo preparada.
   val probeForwardedRs1 = IO(Output(UInt(32.W)));
@@ -207,7 +207,7 @@ object Rv32iTrace {
   )
   private val branchNames =
     Array("nenhum", "BEQ", "BNE", "BLT", "BGE", "BLTU", "BGEU")
-  private val wbNames = Array("ALU", "MEM", "PC+4", "IMM", "CSR")
+  private val wbNames = Array("ALU", "MEM", "PC+tamanho", "IMM", "CSR")
   private def name(names: Array[String], n: BigInt): String =
     names.lift(n.toInt).getOrElse(s"$n")
   // Em instruções imediatas, alguns bits parecem indicar rs2, mas na verdade são parte do número.
