@@ -27,7 +27,8 @@ class DecodeExecuteBundle extends Bundle {
   val csrReadData = UInt(32.W)
 }
 
-/** Pipeline RV32 com instruções comprimidas, de 3 estágios, inspirado no Wildcat.
+/** Pipeline RV32 com instruções comprimidas, de 3 estágios, inspirado no
+  * Wildcat.
   *
   * Estágios:
   *   - IF: busca, alinhamento e descompressão (InstructionFetch + pcReg)
@@ -42,8 +43,7 @@ class DecodeExecuteBundle extends Bundle {
   */
 class Pipeline3(
     initialProgram: Seq[Long] = Seq.empty,
-    memoryWords: Int = 1024,
-    programFile: String = ""
+    memoryWords: Int = 1024
 ) extends Module {
   val io = IO(new Bundle {
     val pc = Output(UInt(32.W))
@@ -80,8 +80,7 @@ class Pipeline3(
   val instrMem = Module(
     new InstructionMemory(
       depthWords = memoryWords,
-      initialData = initialProgram,
-      programFile = programFile
+      initialData = initialProgram
     )
   )
   val dataMem = Module(new DataMemory(depthWords = memoryWords))

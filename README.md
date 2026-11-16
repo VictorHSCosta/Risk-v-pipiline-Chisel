@@ -1,7 +1,6 @@
 # Projeto RISC-V em Chisel
 
-Implementacao inicial de blocos modulares para uma CPU RISC-V RV32I usando Chisel (Scala).
-O projeto foi limpo para preparar um pipeline futuro: nao ha mais top-level uniciclo, apenas blocos reutilizaveis e testes unitarios.
+Implementacao de uma CPU RISC-V RV32I em Chisel (Scala), organizada em blocos reutilizaveis, pipeline e testes.
 
 ## Requisitos
 
@@ -18,15 +17,21 @@ sbt --version
 
 ## Estrutura atual
 
-- `src/main/scala/riscv/elementosbasicos/RV32I.scala`: constantes de opcode e seletores de controle RV32I.
-- `src/main/scala/riscv/elementosbasicos/Controller.scala`: decodificador/controlador combinacional para RV32I base.
-- `src/main/scala/riscv/elementosbasicos/ULA.scala`: ULA de 32 bits para operacoes aritmeticas/logicas RV32I.
-- `src/main/scala/riscv/elementosbasicos/ImmGen.scala`: gerador de imediatos I/S/B/U/J.
-- `src/main/scala/riscv/elementosbasicos/RegisterFile.scala`: banco de 32 registradores x 32 bits.
-- `src/main/scala/riscv/elementosbasicos/Memorias.scala`: memoria de instrucao por palavra e memoria de dados por byte.
-- `src/main/scala/riscv/pipeline/Pipeline3.scala`: top-level inicial de pipeline RV32I em 3 estagios.
-- `src/test/scala/riscv/`: testes com ScalaTest + chiseltest
-- `build.sbt`: dependencias e configuracoes do build
+- `src/main/scala/`: codigo Chisel da CPU. `riscv/elementosbasicos/` tem os blocos reutilizaveis; `riscv/pipeline/` tem o pipeline.
+- `src/test/scala/riscv/unit/`: testes de um bloco Chisel por vez (`execute`, `decode`, `memory`, `registers`, `fetch`, `compressed` e `privileged`).
+- `src/test/scala/riscv/integration/rv32i/`: testes de aceitação RV32I agrupados por comportamento: aritmética, fluxo de controle e memória.
+- `src/test/scala/riscv/integration/blackbox/`: exemplo explícito de teste caixa-preta do processador usando só resultados públicos.
+- `src/test/scala/riscv/integration/rv32c/` e `privileged/`: testes de extensão comprimida e de traps/CSRs, fora do escopo da suíte RV32I base.
+- `src/test/scala/riscv/integration/support/`: montadores de instruções e helper compartilhado pelos testes; não é uma suíte de testes.
+- `src/test/scala/riscv/diagnostics/`: trace opcional por ciclo, para depuração; não é a suíte principal de comportamento arquitetural.
+- `src/test/resources/diagnostics/rv32i-add.hex`: programa HEX pequeno usado como exemplo no teste de trace. `resources/` guarda dados de teste, não código Scala; o arquivo só é lido quando informado em `RV32I_HEX`.
+- Ainda não há `CSRSpec` isolado: os CSRs são exercitados junto com o processador em `integration/privileged/TrapHandlingSpec.scala`.
+- `project/`: configuracao do sbt, como a versao do sbt e plugins. Nao e codigo da CPU.
+- `build.sbt`: configuracao principal do projeto Scala/Chisel e suas dependencias.
+- `.github/workflows/`: automacao de lint e testes no GitHub Actions.
+- `target/`, `project/target/` e `test_run_dir/`: arquivos temporarios criados pelo sbt e pelos testes. Nao edite nem versione esses arquivos.
+
+Fluxo principal: `src/main` define o hardware, `src/test` verifica seu comportamento, e `build.sbt` e `project/` dizem ao sbt como compilar e testar.
 
 ## Como rodar o projeto
 
@@ -51,7 +56,7 @@ sbt test
 Rode apenas o teste da ULA:
 
 ```bash
-sbt "testOnly riscv.ULATest"
+sbt "testOnly riscv.unit.execute.ULATest"
 ```
 
 ## CI e formatacao
@@ -91,211 +96,74 @@ Sobre linter: para Chisel, o mais comum neste projeto e tratar o codigo como
 Scala e usar `scalafmt` para padronizar estilo. Erros estruturais do circuito
 continuam sendo pegos por `sbt compile` e pelos testes com `chiseltest`.
 
-## Testes RV32I e leitura por ciclo
+## Testes do processador
 
-A suíte `Rv32iArithmeticSpec`, `Rv32iControlSpec` e `Rv32iMemorySpec` testa as
-instruções inteiras RV32I com um nome por instrução. `Pipeline3TrapSpec` já testa
-`ECALL` e `EBREAK`. As extensões M, A, C e CSR ficam fora desta suíte básica.
+Os testes de bloco ficam em `unit/` e testam módulos isolados. Os testes em
+`integration/rv32i/` executam programas pelo processador: `arithmetic/` testa
+operações com registradores e imediatos, `control/` testa branches e jumps, e
+`memory/` testa loads, stores e dependências. `integration/rv32c/` testa
+programas com instruções comprimidas. `integration/privileged/` testa traps e
+CSRs. O `Rv32iBench` em `integration/support/` fornece as codificações e o
+helper comum.
+
+Os testes em `integration/rv32i/` são caixa-preta: carregam um pequeno programa
+como fixture e comparam as gravações observáveis de registradores, sem consultar
+sinais dos estágios nem exigir um número exato de ciclos. A especificação fica
+agrupada por comportamento:
+
+- `arithmetic/Rv32iArithmeticSpec`: ADD/SUB, shifts, comparações, lógica, imediatos, LUI e AUIPC.
+- `control/Rv32iControlSpec`: os seis branches tomados e não tomados, JAL, JALR e FENCE.
+- `memory/Rv32iMemorySpec`: LB/LH/LW/LBU/LHU, SB/SH/SW e dependência entre load e uso.
+- `blackbox/rv32i/Rv32iPipelineBlackBoxSpec`: exemplo curto que torna visível a fronteira pública usada pela suíte.
+
+| Grupo | Instruções com caso dirigido | O que o caso observa |
+| --- | --- | --- |
+| Registrador (`OP`) | ADD, SUB, SLL, SLT, SLTU, XOR, SRL, SRA, OR, AND | Escrita de resultado para operandos negativos/positivos escolhidos |
+| Imediato (`OP-IMM`) | ADDI, SLTI, SLTIU, XORI, ORI, ANDI, SLLI, SRLI, SRAI | Resultado escrito após extensão/shift |
+| Controle | BEQ, BNE, BLT, BGE, BLTU, BGEU, JAL, JALR, FENCE | Caminho tomado/não tomado, destino e link de retorno |
+| Memória | LB, LH, LW, LBU, LHU, SB, SH, SW | Valor lido de volta e extensão de sinal/zero |
+| Imediato alto | LUI, AUIPC | Valor montado e PC somado |
+
+Gaps conhecidos da matriz: não há varredura de todos os operandos, nem ainda
+vetores sistemáticos para todos os limites de imediato e shifts, wraparound,
+acessos desalinhados ou combinações extensas de hazards. Esses são os próximos
+casos a acrescentar antes de alegar cobertura ampla; os 38 mnemônicos acima
+significam presença de caso, não prova exaustiva da instrução.
+
+O adaptador `integration/support/Rv32iBlackBox` concentra a ligação ao módulo
+de topo atual. Ao substituir Pipeline3 por Pipeline5, atualize essa classe; os
+casos de comportamento permanecem iguais. A memória de instruções é
+precarregada pelo construtor para fins de simulação porque o módulo atual não
+expõe uma porta externa de barramento de memória. Portanto, “caixa-preta” aqui
+significa não depender da implementação dos estágios; a fixture de programa é
+uma entrada de simulação, não um pino físico atual.
+
+Essa suíte cobre as 38 instruções RV32I não privilegiadas com casos dirigidos;
+ECALL e EBREAK continuam na suíte separada de traps/CSRs. Ela não testa todas
+as combinações possíveis de operandos. Ainda vale ampliar vetores de borda para
+limites de imediato, shifts, overflow modular e endereços desalinhados conforme
+a política arquitetural escolhida. Os testes
+oficiais [RISC-V Architectural Certification Tests](https://github.com/riscv/riscv-arch-test)
+e [riscv-tests](https://github.com/riscv-software-src/riscv-tests) são boas
+referências adicionais; eles não provam sozinhos a ausência de defeitos. Uma
+interface de aposentadoria inspirada em [RVFI](https://github.com/YosysHQ/riscv-formal/blob/main/docs/source/rvfi.rst)
+seria o próximo passo se for necessário comparar instrução por instrução sem
+amarrar a verificação a sinais de write-back específicos.
 
 ```bash
-sbt 'testOnly riscv.pipeline.Rv32iArithmeticSpec riscv.pipeline.Rv32iControlSpec riscv.pipeline.Rv32iMemorySpec riscv.pipeline.Pipeline3TrapSpec'
+sbt 'testOnly riscv.integration.rv32i.arithmetic.Rv32iArithmeticSpec riscv.integration.rv32i.control.Rv32iControlSpec riscv.integration.rv32i.memory.Rv32iMemorySpec riscv.integration.privileged.TrapHandlingSpec'
 ```
 
-Para imprimir IF, ID, EX, operandos, imediato, controle, memória e writeback em
-cada ciclo dos testes automáticos:
+Para listar resultados públicos por ciclo limite durante o diagnóstico:
 
 ```bash
-RV32I_TRACE=1 sbt 'testOnly riscv.pipeline.Rv32iArithmeticSpec -- -z ADD'
+RV32I_HEX=src/test/resources/diagnostics/rv32i-add.hex RV32I_CYCLES=5 \
+  sbt 'testOnly riscv.diagnostics.Rv32iHexTraceSpec'
 ```
 
-Para carregar seu próprio HEX (uma instrução de 8 dígitos por linha, como no
-exemplo `src/test/resources/rv32i-add.hex`) e escolher quantos ciclos ler:
-
-```bash
-RV32I_HEX=src/test/resources/rv32i-add.hex RV32I_CYCLES=5 \
-  sbt 'testOnly riscv.pipeline.Rv32iHexTraceSpec'
-```
-
-O HEX é lido diretamente pelo teste; não precisa gerar Verilog. Cada ciclo
-mostra o PC e instrução buscada em IF, os registradores e sinais em ID, e os
-operandos, resultado e escrita em EX. O formato segue a
+O diagnóstico lê o HEX indicado, uma instrução de 8 dígitos por linha, e lista
+as gravações públicas em registradores. O formato segue a
 [especificação RV32I](https://docs.riscv.org/reference/isa/v20260120/unpriv/rv32.html).
-
-## Gerando Verilog e simulando com Icarus/GTKWave
-
-Este fluxo gera o Verilog do `Pipeline3`, carrega um programa em hexadecimal,
-executa a simulacao com Icarus Verilog e abre as ondas no GTKWave.
-
-### Ferramentas
-
-Instale as ferramentas de simulacao:
-
-```bash
-sudo apt update
-sudo apt install iverilog gtkwave
-```
-
-### Arquivo de programa
-
-O arquivo de programa usado pelo fluxo atual fica em:
-
-```text
-generated/program.hex
-```
-
-Cada linha desse arquivo deve conter **uma instrucao RV32I de 32 bits em
-hexadecimal**, sem `0x`, com 8 digitos por linha:
-
-```text
-00500313
-00a00393
-007302b3
-0000006f
-```
-
-Isso representa a memoria de instrucoes por palavra:
-
-- linha 1: instrucao no endereco `0x00000000`
-- linha 2: instrucao no endereco `0x00000004`
-- linha 3: instrucao no endereco `0x00000008`
-- linha 4: instrucao no endereco `0x0000000c`
-
-Ou seja, o PC anda em bytes, mas a memoria usa uma instrucao de 32 bits por
-linha. Internamente, a memoria usa `PC / 4` para escolher a linha do arquivo.
-
-### Gerar o Verilog
-
-Entre na raiz do projeto:
-
-```bash
-cd ~/Documentos/Risk-v-pipiline-Chisel
-```
-
-Gere o Verilog do pipeline usando `generated/program.hex` como memoria de
-instrucoes:
-
-```bash
-sbt "runMain riscv.pipeline.GeneratePipeline3Verilog generated/program.hex generated"
-```
-
-Esse comando gera/atualiza principalmente:
-
-```text
-generated/Pipeline3.v
-generated/Pipeline3.fir
-generated/Pipeline3.anno.json
-```
-
-O arquivo mais importante para a simulacao com Icarus e:
-
-```text
-generated/Pipeline3.v
-```
-
-### Testbench Verilog
-
-O testbench usado neste fluxo e:
-
-```text
-generated/tb_pipeline3.v
-```
-
-Ele instancia o modulo `Pipeline3`, gera clock/reset, imprime alguns sinais no
-terminal e cria o arquivo de ondas:
-
-```text
-pipeline.vcd
-```
-
-Dentro do testbench, as linhas responsaveis pelo GTKWave sao:
-
-```verilog
-$dumpfile("pipeline.vcd");
-$dumpvars(0, tb_pipeline3);
-```
-
-### Compilar e rodar a simulacao
-
-Compile o Verilog gerado junto com o testbench:
-
-```bash
-iverilog -g2012 -o generated/pipeline3_sim.out generated/Pipeline3.v generated/tb_pipeline3.v
-```
-
-Execute a simulacao:
-
-```bash
-vvp generated/pipeline3_sim.out
-```
-
-Ao final, deve aparecer no projeto o arquivo:
-
-```text
-pipeline.vcd
-```
-
-Se aparecer um aviso parecido com este:
-
-```text
-Not enough words in the file for the requested range [0:1023]
-```
-
-isso normalmente nao e erro. Ele so indica que `generated/program.hex` tem menos
-linhas do que o tamanho total da memoria de instrucoes. As posicoes nao
-preenchidas ficam indefinidas.
-
-### Abrir as ondas no GTKWave
-
-No seu caso, abra o terminal, entre na pasta do projeto e rode:
-
-```bash
-cd ~/Documentos/Risk-v-pipiline-Chisel
-gtkwave pipeline.vcd &
-```
-
-No GTKWave, procure a hierarquia `tb_pipeline3 -> dut` e comece observando:
-
-```text
-clock
-reset
-io_pc
-io_instr
-io_aluResult
-io_writebackEnable
-io_writebackRd
-io_writebackData
-io_illegal
-```
-
-Dentro de `instrMem`, os sinais principais sao:
-
-```text
-io_address
-io_readData
-mem_io_readData_MPORT_addr
-mem_io_readData_MPORT_data
-mem_io_readData_MPORT_en
-```
-
-Interpretacao rapida:
-
-- `io_address`: endereco em bytes recebido pela memoria, normalmente o PC.
-- `io_readData`: instrucao de 32 bits entregue ao pipeline.
-- `mem_io_readData_MPORT_addr`: indice interno da memoria, equivalente a `PC / 4`.
-- `mem_io_readData_MPORT_data`: instrucao bruta lida da memoria.
-- `mem_io_readData_MPORT_en`: enable da porta de leitura.
-
-### Sequencia completa
-
-Para repetir tudo do zero:
-
-```bash
-cd ~/Documentos/Risk-v-pipiline-Chisel
-sbt "runMain riscv.pipeline.GeneratePipeline3Verilog generated/program.hex generated"
-iverilog -g2012 -o generated/pipeline3_sim.out generated/Pipeline3.v generated/tb_pipeline3.v
-vvp generated/pipeline3_sim.out
-gtkwave pipeline.vcd &
-```
 
 ## Fluxo recomendado no dia a dia
 

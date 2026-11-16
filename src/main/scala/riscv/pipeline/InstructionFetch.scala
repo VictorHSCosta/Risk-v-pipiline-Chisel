@@ -4,10 +4,11 @@ import chisel3._
 import chisel3.util._
 import riscv.elementosbasicos.RvcDecompressor
 
-/** Busca RV32 com RVC e um buffer de palavra, antes do decode.
-  * A memória responde combinacionalmente ao endereço quando readEnable está ativo.
-  * Uma instrução de 32 bits na metade superior usa a palavra guardada e a seguinte.
-  * ponytail: memória combinacional; adicionar handshake ao conectar cache com latência.
+/** Busca RV32 com RVC e um buffer de palavra, antes do decode. A memória
+  * responde combinacionalmente ao endereço quando readEnable está ativo. Uma
+  * instrução de 32 bits na metade superior usa a palavra guardada e a seguinte.
+  * ponytail: memória combinacional; adicionar handshake ao conectar cache com
+  * latência.
   */
 class InstructionFetch extends Module {
   val io = IO(new Bundle {
@@ -76,8 +77,11 @@ class InstructionFetch extends Module {
   // Para cruzamento, concatena os 16 bits da palavra seguinte com os 16 atuais.
   // Instrucoes ilegais ou ainda invalidas aparecem como NOP para evitar lixo no decode.
   val fullInstr = Mux(cross, Cat(io.memoryData(15, 0), half), firstWord)
-  io.instr := Mux(io.valid && !io.illegal,
-    Mux(compressed, decompressor.io.inst_out, fullInstr), "h00000013".U)
+  io.instr := Mux(
+    io.valid && !io.illegal,
+    Mux(compressed, decompressor.io.inst_out, fullInstr),
+    "h00000013".U
+  )
 
   when(io.flush) {
     // Um desvio mudou o PC: a palavra antiga nao deve ser reutilizada.

@@ -1,4 +1,4 @@
-package riscv
+package riscv.unit.execute
 
 import chisel3._
 import chiseltest._

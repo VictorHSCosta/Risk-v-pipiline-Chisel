@@ -1,4 +1,6 @@
-package riscv.pipeline
+package riscv.integration.rv32i.memory
+
+import riscv.integration.support.{Rv32iBench, Rv32iCode}
 
 class Rv32iMemorySpec extends Rv32iBench {
   import Rv32iCode._
@@ -40,7 +42,7 @@ class Rv32iMemorySpec extends Rv32iBench {
     }
   }
 
-  it should "fazer um stall de um ciclo em dependência de LW" in {
+  it should "preservar o resultado em dependência imediata de LW" in {
     val program = Seq(
       addi(1, 0, 64),
       addi(2, 0, 42),
@@ -49,7 +51,7 @@ class Rv32iMemorySpec extends Rv32iBench {
       r(0, rd = 5, rs1 = 3, rs2 = 2),
       nop
     )
-    check(program, Map(5 -> BigInt(84)), expectStall = true)
+    check(program, Map(5 -> BigInt(84)))
   }
 
   it should "não fazer stall quando o imediato coincide com o rd do LW" in {
