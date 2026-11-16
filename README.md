@@ -18,8 +18,12 @@ sbt --version
 ## Estrutura atual
 
 - `src/main/scala/`: codigo Chisel da CPU. `riscv/elementosbasicos/` tem os blocos reutilizaveis; `riscv/pipeline/` tem o pipeline.
-- `src/test/scala/`: testes automatizados dos blocos e do pipeline.
-- `src/test/resources/`: programas e dados usados pelos testes.
+- `src/test/scala/riscv/unit/`: testes de um bloco Chisel por vez (`execute`, `decode`, `memory`, `registers`, `fetch`, `compressed` e `privileged`).
+- `src/test/scala/riscv/integration/`: programas curtos executados pelo processador completo; `rv32i/` agrupa aritmética, controle e memória, enquanto `rv32c/` e `privileged/` cobrem RVC e traps/CSRs.
+- `src/test/scala/riscv/integration/support/`: montadores de instruções e helper compartilhado pelos testes; não é uma suíte de testes.
+- `src/test/scala/riscv/diagnostics/`: trace opcional por ciclo, para depuração; não é a suíte principal de comportamento arquitetural.
+- `src/test/resources/diagnostics/rv32i-add.hex`: programa HEX pequeno usado como exemplo no teste de trace. `resources/` guarda dados de teste, não código Scala; o arquivo só é lido quando informado em `RV32I_HEX`.
+- Ainda não há `CSRSpec` isolado: os CSRs são exercitados junto com o processador em `integration/privileged/TrapHandlingSpec.scala`.
 - `project/`: configuracao do sbt, como a versao do sbt e plugins. Nao e codigo da CPU.
 - `build.sbt`: configuracao principal do projeto Scala/Chisel e suas dependencias.
 - `.github/workflows/`: automacao de lint e testes no GitHub Actions.
@@ -50,7 +54,7 @@ sbt test
 Rode apenas o teste da ULA:
 
 ```bash
-sbt "testOnly riscv.ULATest"
+sbt "testOnly riscv.unit.execute.ULATest"
 ```
 
 ## CI e formatacao
@@ -90,34 +94,30 @@ Sobre linter: para Chisel, o mais comum neste projeto e tratar o codigo como
 Scala e usar `scalafmt` para padronizar estilo. Erros estruturais do circuito
 continuam sendo pegos por `sbt compile` e pelos testes com `chiseltest`.
 
-## Testes RV32I e leitura por ciclo
+## Testes do processador
 
-A suíte `Rv32iArithmeticSpec`, `Rv32iControlSpec` e `Rv32iMemorySpec` testa as
-instruções inteiras RV32I com um nome por instrução. `Pipeline3TrapSpec` já testa
-`ECALL` e `EBREAK`. As extensões M, A, C e CSR ficam fora desta suíte básica.
-
-```bash
-sbt 'testOnly riscv.pipeline.Rv32iArithmeticSpec riscv.pipeline.Rv32iControlSpec riscv.pipeline.Rv32iMemorySpec riscv.pipeline.Pipeline3TrapSpec'
-```
-
-Para imprimir IF, ID, EX, operandos, imediato, controle, memória e writeback em
-cada ciclo dos testes automáticos:
+Os testes de bloco ficam em `unit/` e testam módulos isolados. Os testes em
+`integration/rv32i/` executam programas pelo processador: `arithmetic/` testa
+operações com registradores e imediatos, `control/` testa branches e jumps, e
+`memory/` testa loads, stores e dependências. `integration/rv32c/` testa
+programas com instruções comprimidas. `integration/privileged/` testa traps e
+CSRs. O `Rv32iBench` em `integration/support/` fornece as codificações e o
+helper comum.
 
 ```bash
-RV32I_TRACE=1 sbt 'testOnly riscv.pipeline.Rv32iArithmeticSpec -- -z ADD'
+sbt 'testOnly riscv.integration.rv32i.arithmetic.Rv32iArithmeticSpec riscv.integration.rv32i.control.Rv32iControlSpec riscv.integration.rv32i.memory.Rv32iMemorySpec riscv.integration.privileged.TrapHandlingSpec'
 ```
 
-Para carregar seu próprio HEX (uma instrução de 8 dígitos por linha, como no
-exemplo `src/test/resources/rv32i-add.hex`) e escolher quantos ciclos ler:
+Para inspecionar sinais por ciclo durante o diagnóstico:
 
 ```bash
-RV32I_HEX=src/test/resources/rv32i-add.hex RV32I_CYCLES=5 \
-  sbt 'testOnly riscv.pipeline.Rv32iHexTraceSpec'
+RV32I_HEX=src/test/resources/diagnostics/rv32i-add.hex RV32I_CYCLES=5 \
+  sbt 'testOnly riscv.diagnostics.Rv32iHexTraceSpec'
 ```
 
-O HEX é lido diretamente pelo teste. Cada ciclo
-mostra o PC e instrução buscada em IF, os registradores e sinais em ID, e os
-operandos, resultado e escrita em EX. O formato segue a
+O trace lê o HEX indicado, uma instrução de 8 dígitos por linha, e mostra PC,
+instrução e sinais internos por ciclo. Esse diagnóstico pode depender da
+implementação dos estágios. O formato segue a
 [especificação RV32I](https://docs.riscv.org/reference/isa/v20260120/unpriv/rv32.html).
 
 ## Fluxo recomendado no dia a dia

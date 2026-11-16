@@ -1,11 +1,12 @@
-package riscv.pipeline
+package riscv.diagnostics
 
 import chiseltest._
 import org.scalatest.flatspec.AnyFlatSpec
 import scala.io.Source
+import riscv.integration.support.{Rv32iTrace, TracedPipeline3}
 
 /** RV32I_HEX=program.hex RV32I_CYCLES=20 sbt 'testOnly
-  * riscv.pipeline.Rv32iHexTraceSpec'
+  * riscv.diagnostics.Rv32iHexTraceSpec'
   */
 class Rv32iHexTraceSpec extends AnyFlatSpec with ChiselScalatestTester {
   behavior of "Pipeline3: leitura por ciclo de um programa HEX"

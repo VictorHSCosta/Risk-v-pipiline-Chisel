@@ -1,4 +1,6 @@
-package riscv.pipeline
+package riscv.integration.rv32i.arithmetic
+
+import riscv.integration.support.{Rv32iBench, Rv32iCode}
 
 class Rv32iArithmeticSpec extends Rv32iBench {
   import Rv32iCode._

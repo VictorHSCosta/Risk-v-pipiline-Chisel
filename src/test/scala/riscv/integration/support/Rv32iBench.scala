@@ -1,9 +1,11 @@
-package riscv.pipeline
+package riscv.integration.support
 
 import chiseltest._
 import chisel3._
 import org.scalatest.flatspec.AnyFlatSpec
 import scala.collection.mutable.ArrayBuffer
+import riscv.elementosbasicos._
+import riscv.pipeline._
 
 /** Monta as instruções dos programas de teste sem depender de um arquivo HEX.
   */
