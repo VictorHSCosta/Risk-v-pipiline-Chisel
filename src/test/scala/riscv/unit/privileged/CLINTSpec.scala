@@ -3,7 +3,7 @@ package riscv.unit.privileged
 import chisel3._
 import chiseltest._
 import org.scalatest.flatspec.AnyFlatSpec
-import riscv.pipeline.CLINT
+import riscv.pipeline.{CLINT, InterruptCode}
 import riscv.elementosbasicos.RV32I
 import riscv.elementosbasicos.RV32I._
 

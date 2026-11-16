@@ -20,6 +20,7 @@ sbt --version
 - `src/main/scala/`: codigo Chisel da CPU. `riscv/elementosbasicos/` tem os blocos reutilizaveis; `riscv/pipeline/` tem o pipeline.
 - `src/test/scala/riscv/unit/`: testes de um bloco Chisel por vez (`execute`, `decode`, `memory`, `registers`, `fetch`, `compressed` e `privileged`).
 - `src/test/scala/riscv/integration/`: programas curtos executados pelo processador completo; `rv32i/` agrupa aritmética, controle e memória, enquanto `rv32c/` e `privileged/` cobrem RVC e traps/CSRs.
+- `src/test/scala/riscv/integration/blackbox/`: testes do processador pelo módulo de topo e pela interface pública, sem consultar sinais dos estágios.
 - `src/test/scala/riscv/integration/support/`: montadores de instruções e helper compartilhado pelos testes; não é uma suíte de testes.
 - `src/test/scala/riscv/diagnostics/`: trace opcional por ciclo, para depuração; não é a suíte principal de comportamento arquitetural.
 - `src/test/resources/diagnostics/rv32i-add.hex`: programa HEX pequeno usado como exemplo no teste de trace. `resources/` guarda dados de teste, não código Scala; o arquivo só é lido quando informado em `RV32I_HEX`.
@@ -103,6 +104,10 @@ operações com registradores e imediatos, `control/` testa branches e jumps, e
 programas com instruções comprimidas. `integration/privileged/` testa traps e
 CSRs. O `Rv32iBench` em `integration/support/` fornece as codificações e o
 helper comum.
+
+`integration/blackbox/rv32i/` testa o comportamento arquitetural do core sem
+exigir uma quantidade fixa de ciclos nem uma organização específica de
+pipeline. É a suíte a expandir durante a mudança de três para cinco estágios.
 
 ```bash
 sbt 'testOnly riscv.integration.rv32i.arithmetic.Rv32iArithmeticSpec riscv.integration.rv32i.control.Rv32iControlSpec riscv.integration.rv32i.memory.Rv32iMemorySpec riscv.integration.privileged.TrapHandlingSpec'
