@@ -13,7 +13,7 @@ class Rv32iPipelineBlackBoxSpec extends AnyFlatSpec with ChiselScalatestTester {
       0x00500093L, // addi x1, x0, 5
       0x00308113L, // addi x2, x1, 3
       0x002081b3L, // add x3, x1, x2
-      0x00000013L  // nop
+      0x00000013L // nop
     )
     val expectedWrites = Seq(
       1 -> BigInt(5),
@@ -26,8 +26,14 @@ class Rv32iPipelineBlackBoxSpec extends AnyFlatSpec with ChiselScalatestTester {
       var cycles = 0
 
       while (writes.size < expectedWrites.size && cycles < 40) {
-        if (dut.io.writebackEnable.peekBoolean() && dut.io.writebackRd.peekInt() != 0)
-          writes += ((dut.io.writebackRd.peekInt().toInt, dut.io.writebackData.peekInt()))
+        if (
+          dut.io.writebackEnable
+            .peekBoolean() && dut.io.writebackRd.peekInt() != 0
+        )
+          writes += ((
+            dut.io.writebackRd.peekInt().toInt,
+            dut.io.writebackData.peekInt()
+          ))
         dut.clock.step()
         cycles += 1
       }

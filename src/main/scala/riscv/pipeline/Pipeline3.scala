@@ -27,7 +27,8 @@ class DecodeExecuteBundle extends Bundle {
   val csrReadData = UInt(32.W)
 }
 
-/** Pipeline RV32 com instruções comprimidas, de 3 estágios, inspirado no Wildcat.
+/** Pipeline RV32 com instruções comprimidas, de 3 estágios, inspirado no
+  * Wildcat.
   *
   * Estágios:
   *   - IF: busca, alinhamento e descompressão (InstructionFetch + pcReg)

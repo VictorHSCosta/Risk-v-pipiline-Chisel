@@ -15,9 +15,16 @@ class InstructionFetchSpec extends AnyFlatSpec with ChiselScalatestTester {
     val bytes = instructions.flatMap { case (instr, size) =>
       (0 until size).map(i => (instr >> (8 * i)) & 0xffL)
     }
-    bytes.grouped(4).map(_.zipWithIndex.map { case (byte, i) =>
-      byte << (8 * i)
-    }.foldLeft(0L)(_ | _)).toSeq
+    bytes
+      .grouped(4)
+      .map(
+        _.zipWithIndex
+          .map { case (byte, i) =>
+            byte << (8 * i)
+          }
+          .foldLeft(0L)(_ | _)
+      )
+      .toSeq
   }
 
   behavior of "InstructionFetch"
@@ -25,20 +32,29 @@ class InstructionFetchSpec extends AnyFlatSpec with ChiselScalatestTester {
   it should "reutilizar metades e montar a sequencia 16, 32, 32, 16 bits" in {
     val b = addi(2, 1, 3)
     val c = r(0, rd = 3, rs1 = 1, rs2 = 2)
-    val words = pack((0x4095L, 2), (b, 4), (c, 4), (0x0185L, 2),
-      (0x0001L, 2), (0x0001L, 2), (nop, 4))
+    val words = pack(
+      (0x4095L, 2),
+      (b, 4),
+      (c, 4),
+      (0x0185L, 2),
+      (0x0001L, 2),
+      (0x0001L, 2),
+      (nop, 4)
+    )
     test(new InstructionFetch) { dut =>
       dut.io.enable.poke(true.B)
       dut.io.flush.poke(false.B)
-      for ((pc, data, instr, size, address) <- Seq(
-        (0, words(0), addi(1, 0, 5), 2, 0),
-        (2, words(1), b, 4, 4),
-        (6, words(2), c, 4, 8),
-        (10, 0L, addi(3, 3, 1), 2, -1),
-        (12, words(3), nop, 2, 12),
-        (14, 0L, nop, 2, -1),
-        (16, words(4), nop, 4, 16)
-      )) {
+      for (
+        (pc, data, instr, size, address) <- Seq(
+          (0, words(0), addi(1, 0, 5), 2, 0),
+          (2, words(1), b, 4, 4),
+          (6, words(2), c, 4, 8),
+          (10, 0L, addi(3, 3, 1), 2, -1),
+          (12, words(3), nop, 2, 12),
+          (14, 0L, nop, 2, -1),
+          (16, words(4), nop, 4, 16)
+        )
+      ) {
         dut.io.pc.poke(pc.U)
         dut.io.memoryData.poke(data.U)
         dut.io.valid.expect(true.B)

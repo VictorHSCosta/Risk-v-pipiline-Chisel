@@ -5,8 +5,9 @@ import chisel3.util._
 
 /** Memoria de instrucoes somente leitura.
   *
-  * O endereco chega em bytes e a leitura entrega uma palavra alinhada de 4 bytes.
-  * O fetch seleciona e monta as instrucoes de 16 ou 32 bits dessa palavra.
+  * O endereco chega em bytes e a leitura entrega uma palavra alinhada de 4
+  * bytes. O fetch seleciona e monta as instrucoes de 16 ou 32 bits dessa
+  * palavra.
   */
 class InstructionMemory(
     depthWords: Int = 1024,

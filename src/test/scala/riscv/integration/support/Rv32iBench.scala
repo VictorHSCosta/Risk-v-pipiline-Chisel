@@ -5,7 +5,9 @@ import org.scalatest.flatspec.AnyFlatSpec
 import riscv.pipeline.Pipeline3
 import scala.collection.mutable.ArrayBuffer
 
-/** Binding point for the core under test; keep this module's public interface stable. */
+/** Binding point for the core under test; keep this module's public interface
+  * stable.
+  */
 class Rv32iBlackBox(program: Seq[Long], words: Int = 64)
     extends Pipeline3(initialProgram = program, memoryWords = words)
 
@@ -37,10 +39,13 @@ object Rv32iCode {
       (rd.toLong << 7) | 0x6fL
 
   def addi(rd: Int, rs1: Int, imm: Int): Long = i(0x13, 0, rd, rs1, imm)
-  def load(f3: Int, rd: Int, rs1: Int, imm: Int = 0): Long = i(0x03, f3, rd, rs1, imm)
+  def load(f3: Int, rd: Int, rs1: Int, imm: Int = 0): Long =
+    i(0x03, f3, rd, rs1, imm)
 }
 
-/** Integração observável pela saída pública, sem inspeção de estágios ou stalls. */
+/** Integração observável pela saída pública, sem inspeção de estágios ou
+  * stalls.
+  */
 trait Rv32iBench extends AnyFlatSpec with ChiselScalatestTester {
   import Rv32iCode._
 
@@ -53,18 +58,28 @@ trait Rv32iBench extends AnyFlatSpec with ChiselScalatestTester {
       val writes = ArrayBuffer.empty[(Int, BigInt)]
       val maxCycles = math.max(40, program.size * 4 + 16)
       for (_ <- 0 until maxCycles) {
-        if (dut.io.writebackEnable.peekBoolean() && dut.io.writebackRd.peekInt() != 0)
-          writes += ((dut.io.writebackRd.peekInt().toInt, dut.io.writebackData.peekInt()))
+        if (
+          dut.io.writebackEnable
+            .peekBoolean() && dut.io.writebackRd.peekInt() != 0
+        )
+          writes += ((
+            dut.io.writebackRd.peekInt().toInt,
+            dut.io.writebackData.peekInt()
+          ))
         dut.clock.step()
       }
 
       expected.foreach { case (rd, value) =>
         assert(
-          writes.collect { case (`rd`, data) => data }.toSeq == Seq(value & BigInt(0xffffffffL)),
+          writes.collect { case (`rd`, data) => data }.toSeq == Seq(
+            value & BigInt(0xffffffffL)
+          ),
           s"x$rd esperado 0x${value.toString(16)} uma vez; escritas: $writes"
         )
       }
-      absent.foreach(rd => assert(!writes.exists(_._1 == rd), s"x$rd não deveria ser escrito"))
+      absent.foreach(rd =>
+        assert(!writes.exists(_._1 == rd), s"x$rd não deveria ser escrito")
+      )
     }
   }
 

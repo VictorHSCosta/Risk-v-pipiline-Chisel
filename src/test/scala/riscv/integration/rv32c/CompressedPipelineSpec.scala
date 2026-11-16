@@ -13,9 +13,16 @@ class CompressedPipelineSpec extends AnyFlatSpec with ChiselScalatestTester {
     val bytes = instructions.flatMap { case (instr, size) =>
       (0 until size).map(i => (instr >> (8 * i)) & 0xffL)
     }
-    bytes.grouped(4).map(_.zipWithIndex.map { case (byte, i) =>
-      byte << (8 * i)
-    }.foldLeft(0L)(_ | _)).toSeq
+    bytes
+      .grouped(4)
+      .map(
+        _.zipWithIndex
+          .map { case (byte, i) =>
+            byte << (8 * i)
+          }
+          .foldLeft(0L)(_ | _)
+      )
+      .toSeq
   }
 
   behavior of "Pipeline3 com RVC"
@@ -31,12 +38,24 @@ class CompressedPipelineSpec extends AnyFlatSpec with ChiselScalatestTester {
     test(new Pipeline3(initialProgram = program, memoryWords = 32)) { dut =>
       val writes = ArrayBuffer.empty[(Int, BigInt)]
       for (_ <- 0 until 20) {
-        if (dut.io.writebackEnable.peekBoolean() && dut.io.writebackRd.peekInt() != 0)
-          writes += ((dut.io.writebackRd.peekInt().toInt, dut.io.writebackData.peekInt()))
+        if (
+          dut.io.writebackEnable
+            .peekBoolean() && dut.io.writebackRd.peekInt() != 0
+        )
+          writes += ((
+            dut.io.writebackRd.peekInt().toInt,
+            dut.io.writebackData.peekInt()
+          ))
         dut.clock.step()
       }
-      assert(writes.toSeq == Seq(1 -> BigInt(5), 2 -> BigInt(8),
-        3 -> BigInt(13), 3 -> BigInt(14)))
+      assert(
+        writes.toSeq == Seq(
+          1 -> BigInt(5),
+          2 -> BigInt(8),
+          3 -> BigInt(13),
+          3 -> BigInt(14)
+        )
+      )
     }
   }
 
@@ -54,28 +73,47 @@ class CompressedPipelineSpec extends AnyFlatSpec with ChiselScalatestTester {
     test(new Pipeline3(initialProgram = program, memoryWords = 32)) { dut =>
       val writes = ArrayBuffer.empty[(Int, BigInt)]
       for (_ <- 0 until 24) {
-        if (dut.io.writebackEnable.peekBoolean() && dut.io.writebackRd.peekInt() != 0)
-          writes += ((dut.io.writebackRd.peekInt().toInt, dut.io.writebackData.peekInt()))
+        if (
+          dut.io.writebackEnable
+            .peekBoolean() && dut.io.writebackRd.peekInt() != 0
+        )
+          writes += ((
+            dut.io.writebackRd.peekInt().toInt,
+            dut.io.writebackData.peekInt()
+          ))
         dut.clock.step()
       }
-      assert(writes.toSeq == Seq(1 -> BigInt(2), 5 -> BigInt(9),
-        2 -> BigInt(14), 1 -> BigInt(12), 6 -> BigInt(10)))
+      assert(
+        writes.toSeq == Seq(
+          1 -> BigInt(2),
+          5 -> BigInt(9),
+          2 -> BigInt(14),
+          1 -> BigInt(12),
+          6 -> BigInt(10)
+        )
+      )
     }
   }
 
   it should "manter load-use e forwarding quando a instrucao dependente e comprimida" in {
     val program = pack(
-      (addi(1, 0, 64), 4), (addi(2, 0, 42), 4),
-      (s(2, 1, 2), 4), (load(2, 3, 1), 4),
+      (addi(1, 0, 64), 4),
+      (addi(2, 0, 42), 4),
+      (s(2, 1, 2), 4),
+      (load(2, 3, 1), 4),
       (0x0185L, 2), // c.addi x3, 1
-      (addi(4, 3, 2), 4), (j(0, 0), 4)
+      (addi(4, 3, 2), 4),
+      (j(0, 0), 4)
     )
     test(new Pipeline3(initialProgram = program, memoryWords = 32)) { dut =>
       val results = ArrayBuffer.empty[BigInt]
       var stalls = 0
       for (_ <- 0 until 24) {
         if (dut.io.stalled.peekBoolean()) stalls += 1
-        if (dut.io.writebackEnable.peekBoolean() && dut.io.writebackRd.peekInt() == 4)
+        if (
+          dut.io.writebackEnable
+            .peekBoolean() && dut.io.writebackRd.peekInt() == 4
+        )
           results += dut.io.writebackData.peekInt()
         dut.clock.step()
       }
