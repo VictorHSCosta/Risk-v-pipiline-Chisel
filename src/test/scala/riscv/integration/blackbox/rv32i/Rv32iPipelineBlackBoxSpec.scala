@@ -2,7 +2,7 @@ package riscv.integration.blackbox.rv32i
 
 import chiseltest._
 import org.scalatest.flatspec.AnyFlatSpec
-import riscv.pipeline.Pipeline3
+import riscv.integration.support.Rv32iBlackBox
 import scala.collection.mutable.ArrayBuffer
 
 class Rv32iPipelineBlackBoxSpec extends AnyFlatSpec with ChiselScalatestTester {
@@ -21,7 +21,7 @@ class Rv32iPipelineBlackBoxSpec extends AnyFlatSpec with ChiselScalatestTester {
       3 -> BigInt(13)
     )
 
-    test(new Pipeline3(initialProgram = program, memoryWords = 32)) { dut =>
+    test(new Rv32iBlackBox(program, words = 32)) { dut =>
       val writes = ArrayBuffer.empty[(Int, BigInt)]
       var cycles = 0
 
