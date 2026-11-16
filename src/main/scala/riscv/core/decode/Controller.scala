@@ -1,7 +1,9 @@
-package riscv.elementosbasicos
+package riscv.core.decode
 
 import chisel3._
 import chisel3.util._
+import riscv.core.execute.ALUOp
+import riscv.isa.shared.RV32I
 
 class ControlSignals extends Bundle {
   val regWrite = Bool()

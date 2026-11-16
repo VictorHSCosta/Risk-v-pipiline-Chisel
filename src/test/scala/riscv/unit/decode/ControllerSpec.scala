@@ -3,7 +3,9 @@ package riscv.unit.decode
 import chisel3._
 import chiseltest._
 import org.scalatest.flatspec.AnyFlatSpec
-import riscv.elementosbasicos.{ALUOp, Controller, RV32I}
+import riscv.core.decode.Controller
+import riscv.core.execute.ALUOp
+import riscv.isa.shared.RV32I
 
 class ControllerSpec extends AnyFlatSpec with ChiselScalatestTester {
   behavior of "Controller"

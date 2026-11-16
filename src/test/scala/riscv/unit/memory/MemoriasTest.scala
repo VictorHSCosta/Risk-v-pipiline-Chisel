@@ -3,7 +3,8 @@ package riscv.unit.memory
 import chisel3._
 import chiseltest._
 import org.scalatest.flatspec.AnyFlatSpec
-import riscv.elementosbasicos.{DataMemory, InstructionMemory, RV32I}
+import riscv.core.memory.{DataMemory, InstructionMemory}
+import riscv.isa.shared.RV32I
 
 class MemoriasTest extends AnyFlatSpec with ChiselScalatestTester {
 

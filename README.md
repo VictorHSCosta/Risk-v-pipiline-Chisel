@@ -17,7 +17,7 @@ sbt --version
 
 ## Estrutura atual
 
-- `src/main/scala/`: codigo Chisel da CPU. `riscv/elementosbasicos/` tem os blocos reutilizaveis; `riscv/pipeline/` tem o pipeline.
+- `src/main/scala/riscv/`: codigo Chisel organizado por ISA, funcao e subsistema; a arvore detalhada esta abaixo.
 - `src/test/scala/riscv/unit/`: testes de um bloco Chisel por vez (`execute`, `decode`, `memory`, `registers`, `fetch`, `compressed` e `privileged`).
 - `src/test/scala/riscv/integration/rv32i/`: testes de aceitação RV32I agrupados por comportamento: aritmética, fluxo de controle e memória.
 - `src/test/scala/riscv/integration/blackbox/`: exemplo explícito de teste caixa-preta do processador usando só resultados públicos.
@@ -32,6 +32,40 @@ sbt --version
 - `target/`, `project/target/` e `test_run_dir/`: arquivos temporarios criados pelo sbt e pelos testes. Nao edite nem versione esses arquivos.
 
 Fluxo principal: `src/main` define o hardware, `src/test` verifica seu comportamento, e `build.sbt` e `project/` dizem ao sbt como compilar e testar.
+
+## Organização do código-fonte
+
+```text
+src/main/scala/riscv/
+  base/rv32i/
+    decode/ImmediateGenerator.scala
+    registers/IntegerRegisterFile.scala
+  core/
+    decode/Controller.scala
+    execute/ArithmeticLogicUnit.scala
+    fetch/InstructionFetch.scala
+    memory/Memories.scala
+    pipeline/Pipeline3.scala
+  extensions/c/CompressedInstructionDecoder.scala
+  isa/shared/InstructionDefinitions.scala
+  platform/interrupts/CLINT.scala
+  privileged/csr/CSR.scala
+```
+
+`base/rv32i` contém os blocos diretamente ligados à base inteira RV32I. Os
+arquivos em `core` são os componentes usados pelo core atual; alguns já
+combinam mais de uma extensão: `Controller` decodifica RV32I, M, A e SYSTEM,
+`ArithmeticLogicUnit` implementa operações RV32I e multiplicações da extensão
+M, e `Pipeline3` conecta também RVC, atomics, CSR e CLINT. `InstructionFetch`
+inclui o caminho de descompressão C. `InstructionDefinitions.scala` concentra
+constantes usadas por mais de uma dessas áreas, inclusive definições de
+extensões e instruções privilegiadas. Esses nomes descrevem onde cada arquivo
+está e o que ele contém hoje; não extraem nem alteram funcionalidades.
+
+As pastas `extensions/c`, `privileged/csr` e `platform/interrupts` deixam
+separadas a extensão comprimida, o estado privilegiado e o bloco de
+interrupções. `CLINT` é infraestrutura de interrupções, não uma extensão da
+ISA RV32I.
 
 ## Como rodar o projeto
 
@@ -167,7 +201,7 @@ as gravações públicas em registradores. O formato segue a
 
 ## Fluxo recomendado no dia a dia
 
-1. Editar o modulo em `src/main/scala/riscv/elementosbasicos/`.
+1. Editar o modulo na pasta correspondente em `src/main/scala/riscv/`.
 2. Rodar `sbt scalafmtAll`.
 3. Rodar `sbt scalafmtCheckAll test`.
 
@@ -180,7 +214,7 @@ as gravações públicas em registradores. O formato segue a
 
 ## Pipeline inicial
 
-O modulo `Pipeline3` segue a organizacao didatica do capitulo 15:
+O modulo `riscv.core.pipeline.Pipeline3` segue a organizacao didatica do capitulo 15:
 
 1. IF: busca de instrucao e atualizacao do PC.
 2. ID: decode, leitura do banco de registradores e geracao de imediato.

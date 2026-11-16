@@ -2,7 +2,7 @@ package riscv.integration.privileged
 
 import chiseltest._
 import org.scalatest.flatspec.AnyFlatSpec
-import riscv.pipeline.Pipeline3
+import riscv.core.pipeline.Pipeline3
 
 class TrapHandlingSpec extends AnyFlatSpec with ChiselScalatestTester {
   behavior of "Pipeline3 (Trap Handling)"

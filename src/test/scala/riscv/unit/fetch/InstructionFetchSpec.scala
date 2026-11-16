@@ -5,7 +5,7 @@ import chiseltest._
 import org.scalatest.flatspec.AnyFlatSpec
 import scala.collection.mutable.ArrayBuffer
 import riscv.integration.support.Rv32iCode
-import riscv.pipeline.InstructionFetch
+import riscv.core.fetch.InstructionFetch
 
 class InstructionFetchSpec extends AnyFlatSpec with ChiselScalatestTester {
   import Rv32iCode._
