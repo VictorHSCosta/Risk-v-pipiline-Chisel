@@ -42,8 +42,7 @@ class DecodeExecuteBundle extends Bundle {
   */
 class Pipeline3(
     initialProgram: Seq[Long] = Seq.empty,
-    memoryWords: Int = 1024,
-    programFile: String = ""
+    memoryWords: Int = 1024
 ) extends Module {
   val io = IO(new Bundle {
     val pc = Output(UInt(32.W))
@@ -80,8 +79,7 @@ class Pipeline3(
   val instrMem = Module(
     new InstructionMemory(
       depthWords = memoryWords,
-      initialData = initialProgram,
-      programFile = programFile
+      initialData = initialProgram
     )
   )
   val dataMem = Module(new DataMemory(depthWords = memoryWords))

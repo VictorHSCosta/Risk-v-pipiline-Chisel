@@ -2,7 +2,6 @@ package riscv.elementosbasicos
 
 import chisel3._
 import chisel3.util._
-import chisel3.util.experimental.loadMemoryFromFileInline
 
 /** Memoria de instrucoes somente leitura.
   *
@@ -11,14 +10,9 @@ import chisel3.util.experimental.loadMemoryFromFileInline
   */
 class InstructionMemory(
     depthWords: Int = 1024,
-    initialData: Seq[Long] = Seq.empty,
-    programFile: String = ""
+    initialData: Seq[Long] = Seq.empty
 ) extends Module {
   require(depthWords > 0, "depthWords deve ser maior que zero")
-  require(
-    initialData.isEmpty || programFile.isEmpty,
-    "use initialData para testes Chisel ou programFile para simulacao Verilog, nao ambos"
-  )
 
   val io = IO(new Bundle {
     val address = Input(UInt(32.W))
@@ -28,18 +22,9 @@ class InstructionMemory(
 
   private val wordIndex = io.address(log2Ceil(depthWords) + 1, 2)
 
-  if (programFile.nonEmpty) {
-    val mem = Mem(depthWords, UInt(32.W))
-    loadMemoryFromFileInline(mem, programFile)
-    io.readData := 0.U
-    when(io.readEnable) {
-      io.readData := mem(wordIndex)
-    }
-  } else {
-    val program = initialData.padTo(depthWords, 0L)
-    val mem = VecInit(program.map(_.U(32.W)))
-    io.readData := Mux(io.readEnable, mem(wordIndex), 0.U)
-  }
+  val program = initialData.padTo(depthWords, 0L)
+  val mem = VecInit(program.map(_.U(32.W)))
+  io.readData := Mux(io.readEnable, mem(wordIndex), 0.U)
 }
 
 /** Memoria de dados byte-addressable.

@@ -1,7 +1,6 @@
 # Projeto RISC-V em Chisel
 
-Implementacao inicial de blocos modulares para uma CPU RISC-V RV32I usando Chisel (Scala).
-O projeto foi limpo para preparar um pipeline futuro: nao ha mais top-level uniciclo, apenas blocos reutilizaveis e testes unitarios.
+Implementacao de uma CPU RISC-V RV32I em Chisel (Scala), organizada em blocos reutilizaveis, pipeline e testes.
 
 ## Requisitos
 
@@ -18,15 +17,15 @@ sbt --version
 
 ## Estrutura atual
 
-- `src/main/scala/riscv/elementosbasicos/RV32I.scala`: constantes de opcode e seletores de controle RV32I.
-- `src/main/scala/riscv/elementosbasicos/Controller.scala`: decodificador/controlador combinacional para RV32I base.
-- `src/main/scala/riscv/elementosbasicos/ULA.scala`: ULA de 32 bits para operacoes aritmeticas/logicas RV32I.
-- `src/main/scala/riscv/elementosbasicos/ImmGen.scala`: gerador de imediatos I/S/B/U/J.
-- `src/main/scala/riscv/elementosbasicos/RegisterFile.scala`: banco de 32 registradores x 32 bits.
-- `src/main/scala/riscv/elementosbasicos/Memorias.scala`: memoria de instrucao por palavra e memoria de dados por byte.
-- `src/main/scala/riscv/pipeline/Pipeline3.scala`: top-level inicial de pipeline RV32I em 3 estagios.
-- `src/test/scala/riscv/`: testes com ScalaTest + chiseltest
-- `build.sbt`: dependencias e configuracoes do build
+- `src/main/scala/`: codigo Chisel da CPU. `riscv/elementosbasicos/` tem os blocos reutilizaveis; `riscv/pipeline/` tem o pipeline.
+- `src/test/scala/`: testes automatizados dos blocos e do pipeline.
+- `src/test/resources/`: programas e dados usados pelos testes.
+- `project/`: configuracao do sbt, como a versao do sbt e plugins. Nao e codigo da CPU.
+- `build.sbt`: configuracao principal do projeto Scala/Chisel e suas dependencias.
+- `.github/workflows/`: automacao de lint e testes no GitHub Actions.
+- `target/`, `project/target/` e `test_run_dir/`: arquivos temporarios criados pelo sbt e pelos testes. Nao edite nem versione esses arquivos.
+
+Fluxo principal: `src/main` define o hardware, `src/test` verifica seu comportamento, e `build.sbt` e `project/` dizem ao sbt como compilar e testar.
 
 ## Como rodar o projeto
 
@@ -116,186 +115,10 @@ RV32I_HEX=src/test/resources/rv32i-add.hex RV32I_CYCLES=5 \
   sbt 'testOnly riscv.pipeline.Rv32iHexTraceSpec'
 ```
 
-O HEX é lido diretamente pelo teste; não precisa gerar Verilog. Cada ciclo
+O HEX é lido diretamente pelo teste. Cada ciclo
 mostra o PC e instrução buscada em IF, os registradores e sinais em ID, e os
 operandos, resultado e escrita em EX. O formato segue a
 [especificação RV32I](https://docs.riscv.org/reference/isa/v20260120/unpriv/rv32.html).
-
-## Gerando Verilog e simulando com Icarus/GTKWave
-
-Este fluxo gera o Verilog do `Pipeline3`, carrega um programa em hexadecimal,
-executa a simulacao com Icarus Verilog e abre as ondas no GTKWave.
-
-### Ferramentas
-
-Instale as ferramentas de simulacao:
-
-```bash
-sudo apt update
-sudo apt install iverilog gtkwave
-```
-
-### Arquivo de programa
-
-O arquivo de programa usado pelo fluxo atual fica em:
-
-```text
-generated/program.hex
-```
-
-Cada linha desse arquivo deve conter **uma instrucao RV32I de 32 bits em
-hexadecimal**, sem `0x`, com 8 digitos por linha:
-
-```text
-00500313
-00a00393
-007302b3
-0000006f
-```
-
-Isso representa a memoria de instrucoes por palavra:
-
-- linha 1: instrucao no endereco `0x00000000`
-- linha 2: instrucao no endereco `0x00000004`
-- linha 3: instrucao no endereco `0x00000008`
-- linha 4: instrucao no endereco `0x0000000c`
-
-Ou seja, o PC anda em bytes, mas a memoria usa uma instrucao de 32 bits por
-linha. Internamente, a memoria usa `PC / 4` para escolher a linha do arquivo.
-
-### Gerar o Verilog
-
-Entre na raiz do projeto:
-
-```bash
-cd ~/Documentos/Risk-v-pipiline-Chisel
-```
-
-Gere o Verilog do pipeline usando `generated/program.hex` como memoria de
-instrucoes:
-
-```bash
-sbt "runMain riscv.pipeline.GeneratePipeline3Verilog generated/program.hex generated"
-```
-
-Esse comando gera/atualiza principalmente:
-
-```text
-generated/Pipeline3.v
-generated/Pipeline3.fir
-generated/Pipeline3.anno.json
-```
-
-O arquivo mais importante para a simulacao com Icarus e:
-
-```text
-generated/Pipeline3.v
-```
-
-### Testbench Verilog
-
-O testbench usado neste fluxo e:
-
-```text
-generated/tb_pipeline3.v
-```
-
-Ele instancia o modulo `Pipeline3`, gera clock/reset, imprime alguns sinais no
-terminal e cria o arquivo de ondas:
-
-```text
-pipeline.vcd
-```
-
-Dentro do testbench, as linhas responsaveis pelo GTKWave sao:
-
-```verilog
-$dumpfile("pipeline.vcd");
-$dumpvars(0, tb_pipeline3);
-```
-
-### Compilar e rodar a simulacao
-
-Compile o Verilog gerado junto com o testbench:
-
-```bash
-iverilog -g2012 -o generated/pipeline3_sim.out generated/Pipeline3.v generated/tb_pipeline3.v
-```
-
-Execute a simulacao:
-
-```bash
-vvp generated/pipeline3_sim.out
-```
-
-Ao final, deve aparecer no projeto o arquivo:
-
-```text
-pipeline.vcd
-```
-
-Se aparecer um aviso parecido com este:
-
-```text
-Not enough words in the file for the requested range [0:1023]
-```
-
-isso normalmente nao e erro. Ele so indica que `generated/program.hex` tem menos
-linhas do que o tamanho total da memoria de instrucoes. As posicoes nao
-preenchidas ficam indefinidas.
-
-### Abrir as ondas no GTKWave
-
-No seu caso, abra o terminal, entre na pasta do projeto e rode:
-
-```bash
-cd ~/Documentos/Risk-v-pipiline-Chisel
-gtkwave pipeline.vcd &
-```
-
-No GTKWave, procure a hierarquia `tb_pipeline3 -> dut` e comece observando:
-
-```text
-clock
-reset
-io_pc
-io_instr
-io_aluResult
-io_writebackEnable
-io_writebackRd
-io_writebackData
-io_illegal
-```
-
-Dentro de `instrMem`, os sinais principais sao:
-
-```text
-io_address
-io_readData
-mem_io_readData_MPORT_addr
-mem_io_readData_MPORT_data
-mem_io_readData_MPORT_en
-```
-
-Interpretacao rapida:
-
-- `io_address`: endereco em bytes recebido pela memoria, normalmente o PC.
-- `io_readData`: instrucao de 32 bits entregue ao pipeline.
-- `mem_io_readData_MPORT_addr`: indice interno da memoria, equivalente a `PC / 4`.
-- `mem_io_readData_MPORT_data`: instrucao bruta lida da memoria.
-- `mem_io_readData_MPORT_en`: enable da porta de leitura.
-
-### Sequencia completa
-
-Para repetir tudo do zero:
-
-```bash
-cd ~/Documentos/Risk-v-pipiline-Chisel
-sbt "runMain riscv.pipeline.GeneratePipeline3Verilog generated/program.hex generated"
-iverilog -g2012 -o generated/pipeline3_sim.out generated/Pipeline3.v generated/tb_pipeline3.v
-vvp generated/pipeline3_sim.out
-gtkwave pipeline.vcd &
-```
 
 ## Fluxo recomendado no dia a dia
 
