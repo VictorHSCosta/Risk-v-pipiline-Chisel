@@ -4,7 +4,7 @@ import chiseltest._
 import org.scalatest.flatspec.AnyFlatSpec
 import scala.collection.mutable.ArrayBuffer
 import riscv.integration.support.Rv32iCode
-import riscv.core.pipeline.Pipeline3
+import riscv.core.pipeline.pipeline3.Pipeline3
 
 class CompressedPipelineSpec extends AnyFlatSpec with ChiselScalatestTester {
   import Rv32iCode._

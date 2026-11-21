@@ -1,4 +1,4 @@
-package riscv.core.memory
+package riscv.core.models.memory
 
 import chisel3._
 import chisel3.util._

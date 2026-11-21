@@ -1,4 +1,4 @@
-package riscv.core.fetch
+package riscv.core.models.fetch
 
 import chisel3._
 import chisel3.util._

@@ -1,4 +1,4 @@
-package riscv.core.execute
+package riscv.core.models.execute
 
 import chisel3._
 import chisel3.util._

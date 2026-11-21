@@ -41,23 +41,27 @@ src/main/scala/riscv/
     decode/ImmediateGenerator.scala
     registers/IntegerRegisterFile.scala
   core/
-    decode/Controller.scala
-    execute/ArithmeticLogicUnit.scala
-    fetch/InstructionFetch.scala
-    memory/Memories.scala
-    pipeline/Pipeline3.scala
+    models/
+      decode/Controller.scala
+      execute/ArithmeticLogicUnit.scala
+      fetch/InstructionFetch.scala
+      memory/Memories.scala
+    pipeline/
+      pipeline3/Pipeline3.scala
+      pipeline3/Pipeline3Main.scala
   extensions/c/CompressedInstructionDecoder.scala
   isa/shared/InstructionDefinitions.scala
   platform/interrupts/CLINT.scala
   privileged/csr/CSR.scala
 ```
 
-`base/rv32i` contém os blocos diretamente ligados à base inteira RV32I. Os
-arquivos em `core` são os componentes usados pelo core atual; alguns já
-combinam mais de uma extensão: `Controller` decodifica RV32I, M, A e SYSTEM,
-`ArithmeticLogicUnit` implementa operações RV32I e multiplicações da extensão
-M, e `Pipeline3` conecta também RVC, atomics, CSR e CLINT. `InstructionFetch`
-inclui o caminho de descompressão C. `InstructionDefinitions.scala` concentra
+`base/rv32i` contém os blocos diretamente ligados à base inteira RV32I.
+`core/models` agrupa os blocos reutilizáveis pelo processador atual. `Controller`
+decodifica RV32I, M, A e SYSTEM; `ArithmeticLogicUnit` implementa operações
+RV32I e multiplicações da extensão M; `InstructionFetch` inclui o caminho de
+descompressão C. `core/pipeline/pipeline3` contém o core atual e seu ponto de
+entrada `Pipeline3Main`. `Pipeline3Main` gera Verilog usando a configuração
+padrão de `Pipeline3`. `InstructionDefinitions.scala` concentra
 constantes usadas por mais de uma dessas áreas, inclusive definições de
 extensões e instruções privilegiadas. Esses nomes descrevem onde cada arquivo
 está e o que ele contém hoje; não extraem nem alteram funcionalidades.
@@ -79,6 +83,12 @@ Compile o codigo:
 
 ```bash
 sbt compile
+```
+
+Gere o Verilog do Pipeline 3:
+
+```bash
+sbt 'runMain riscv.core.pipeline.pipeline3.Pipeline3Main'
 ```
 
 Rode todos os testes:
@@ -214,7 +224,7 @@ as gravações públicas em registradores. O formato segue a
 
 ## Pipeline inicial
 
-O modulo `riscv.core.pipeline.Pipeline3` segue a organizacao didatica do capitulo 15:
+O modulo `riscv.core.pipeline.pipeline3.Pipeline3` segue a organizacao didatica do capitulo 15:
 
 1. IF: busca de instrucao e atualizacao do PC.
 2. ID: decode, leitura do banco de registradores e geracao de imediato.
