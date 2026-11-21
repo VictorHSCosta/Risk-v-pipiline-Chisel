@@ -50,7 +50,10 @@ private[integration] object CompressedProgram {
     assert(writes.get(31).contains(BigInt(1)), "program did not complete")
     assert(!writes.contains(30), "an instruction on a skipped path wrote x30")
     expected.foreach { case (rd, value) =>
-      assert(writes.get(rd).contains(value), s"x$rd expected $value, got ${writes.get(rd)}")
+      assert(
+        writes.get(rd).contains(value),
+        s"x$rd expected $value, got ${writes.get(rd)}"
+      )
     }
   }
 }
