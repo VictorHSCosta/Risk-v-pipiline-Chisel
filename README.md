@@ -19,13 +19,11 @@ sbt --version
 
 - `src/main/scala/riscv/`: codigo Chisel organizado por ISA, funcao e subsistema; a arvore detalhada esta abaixo.
 - `src/test/scala/riscv/unit/`: testes de um bloco Chisel por vez (`execute`, `decode`, `memory`, `registers`, `fetch`, `compressed` e `privileged`).
-- `src/test/scala/riscv/integration/rv32i/`: testes de aceitação RV32I agrupados por comportamento: aritmética, fluxo de controle e memória.
-- `src/test/scala/riscv/integration/blackbox/`: exemplo explícito de teste caixa-preta do processador usando só resultados públicos.
-- `src/test/scala/riscv/integration/rv32c/` e `privileged/`: testes de extensão comprimida e de traps/CSRs, fora do escopo da suíte RV32I base.
-- `src/test/scala/riscv/integration/support/`: montadores de instruções e helper compartilhado pelos testes; não é uma suíte de testes.
+- `src/test/scala/riscv/integration/pipeline3/`: testes de integração que executam o Pipeline3, incluindo RV32I, RVC, black-box, traps/CSRs e suporte.
+- `src/test/scala/riscv/integration/pipeline5/`: destino dos futuros testes de integração do Pipeline5.
 - `src/test/scala/riscv/diagnostics/`: trace opcional por ciclo, para depuração; não é a suíte principal de comportamento arquitetural.
 - `src/test/resources/diagnostics/rv32i-add.hex`: programa HEX pequeno usado como exemplo no teste de trace. `resources/` guarda dados de teste, não código Scala; o arquivo só é lido quando informado em `RV32I_HEX`.
-- Ainda não há `CSRSpec` isolado: os CSRs são exercitados junto com o processador em `integration/privileged/TrapHandlingSpec.scala`.
+- Ainda não há `CSRSpec` isolado: os CSRs são exercitados junto com o processador em `integration/pipeline3/privileged/TrapHandlingSpec.scala`.
 - `project/`: configuracao do sbt, como a versao do sbt e plugins. Nao e codigo da CPU.
 - `build.sbt`: configuracao principal do projeto Scala/Chisel e suas dependencias.
 - `.github/workflows/`: automacao de lint e testes no GitHub Actions.
@@ -143,14 +141,15 @@ continuam sendo pegos por `sbt compile` e pelos testes com `chiseltest`.
 ## Testes do processador
 
 Os testes de bloco ficam em `unit/` e testam módulos isolados. Os testes em
-`integration/rv32i/` executam programas pelo processador: `arithmetic/` testa
+`integration/pipeline3/rv32i/` executam programas pelo Pipeline3: `arithmetic/` testa
 operações com registradores e imediatos, `control/` testa branches e jumps, e
-`memory/` testa loads, stores e dependências. `integration/rv32c/` testa
-programas com instruções comprimidas. `integration/privileged/` testa traps e
-CSRs. O `Rv32iBench` em `integration/support/` fornece as codificações e o
-helper comum.
+`memory/` testa loads, stores e dependências. `integration/pipeline3/rv32c/`
+testa programas com instruções comprimidas. `integration/pipeline3/privileged/`
+testa traps e CSRs. O `Rv32iBench` em `integration/pipeline3/support/` fornece
+as codificações e o helper comum. Os testes novos do Pipeline5 ficam em
+`integration/pipeline5/` e devem usar um helper próprio quando necessário.
 
-Os testes em `integration/rv32i/` são caixa-preta: carregam um pequeno programa
+Os testes em `integration/pipeline3/rv32i/` são caixa-preta: carregam um pequeno programa
 como fixture e comparam as gravações observáveis de registradores, sem consultar
 sinais dos estágios nem exigir um número exato de ciclos. A especificação fica
 agrupada por comportamento:
@@ -174,7 +173,7 @@ acessos desalinhados ou combinações extensas de hazards. Esses são os próxim
 casos a acrescentar antes de alegar cobertura ampla; os 38 mnemônicos acima
 significam presença de caso, não prova exaustiva da instrução.
 
-O adaptador `integration/support/Rv32iBlackBox` concentra a ligação ao módulo
+O adaptador `integration/pipeline3/support/Rv32iBlackBox` concentra a ligação ao módulo
 de topo atual. Ao substituir Pipeline3 por Pipeline5, atualize essa classe; os
 casos de comportamento permanecem iguais. A memória de instruções é
 precarregada pelo construtor para fins de simulação porque o módulo atual não
