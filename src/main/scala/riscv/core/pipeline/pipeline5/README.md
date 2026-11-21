@@ -1,7 +1,12 @@
 # Pipeline 5
 
-O processador de cinco estágios ainda não foi implementado. Quando existir,
-esta pasta receberá o módulo `Pipeline5` e seu ponto de entrada `Pipeline5Main`.
+O módulo `Pipeline5` executa instruções inteiras RV32I e as instruções
+comprimidas que expandem para operações suportadas. As etapas são IF, ID, EX,
+MEM e WB. O núcleo sinaliza instruções SYSTEM (incluindo ECALL, EBREAK e
+C.EBREAK), atômicas e outras codificações fora do escopo em `io.illegal`.
 
-Os blocos que puderem ser compartilhados sem alterar seu comportamento ficam em
-`riscv.core.models`.
+O forwarding prioriza EX/MEM sobre MEM/WB. Uma instrução dependente de load
+espera um ciclo. Desvios tomados e saltos descartam as instruções mais novas.
+
+- Teste de caixa preta com programa misto: `sbt "testOnly riscv.integration.pipeline5.CompressedProgramSpec"`
+- Gerar Verilog: `sbt "runMain riscv.core.pipeline.pipeline5.Pipeline5Main --target-dir output/verilog"`
