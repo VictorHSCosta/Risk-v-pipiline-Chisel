@@ -1,7 +1,8 @@
-package riscv.elementosbasicos
+package riscv.core.models.memory
 
 import chisel3._
 import chisel3.util._
+import riscv.isa.shared.RV32I
 
 /** Memoria de instrucoes somente leitura.
   *

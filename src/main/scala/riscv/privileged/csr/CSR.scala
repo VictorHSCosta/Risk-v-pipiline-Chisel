@@ -1,8 +1,8 @@
-package riscv
+package riscv.privileged.csr
 
 import chisel3._
 import chisel3.util._
-import riscv.elementosbasicos.RV32I
+import riscv.isa.shared.RV32I
 
 class CSR extends Module {
   val io = IO(new Bundle {

@@ -24,6 +24,7 @@ dist/
 .agents
 
 # Test outputs and temporary run directories
+temp/
 test_run_dir/
 test_run_dir*/
 *.log

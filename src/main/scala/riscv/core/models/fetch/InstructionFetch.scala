@@ -1,8 +1,8 @@
-package riscv.pipeline
+package riscv.core.models.fetch
 
 import chisel3._
 import chisel3.util._
-import riscv.elementosbasicos.RvcDecompressor
+import riscv.extensions.c.RvcDecompressor
 
 /** Busca RV32 com RVC e um buffer de palavra, antes do decode. A memória
   * responde combinacionalmente ao endereço quando readEnable está ativo. Uma

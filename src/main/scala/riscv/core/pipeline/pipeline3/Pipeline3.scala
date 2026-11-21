@@ -1,9 +1,16 @@
-package riscv.pipeline
+package riscv.core.pipeline.pipeline3
 
 import chisel3._
 import chisel3.util._
-import riscv.elementosbasicos._
-import riscv._
+import riscv.base.rv32i.decode.ImmGen
+import riscv.base.rv32i.registers.RegisterFile
+import riscv.core.models.decode.{ControlSignals, Controller}
+import riscv.core.models.execute.{ALUOp, ULA}
+import riscv.core.models.fetch.InstructionFetch
+import riscv.core.models.memory.{DataMemory, InstructionMemory}
+import riscv.isa.shared.RV32I
+import riscv.platform.interrupts.{CLINT, InterruptCode}
+import riscv.privileged.csr.CSR
 
 // ============================================================
 // BUNDLE: registradores do estágio ID/EX

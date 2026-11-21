@@ -1,4 +1,4 @@
-package riscv.elementosbasicos
+package riscv.base.rv32i.registers
 
 import chisel3._
 import chisel3.util._

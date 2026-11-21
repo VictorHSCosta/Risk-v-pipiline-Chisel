@@ -1,4 +1,4 @@
-package riscv.elementosbasicos
+package riscv.isa.shared
 
 import chisel3._
 

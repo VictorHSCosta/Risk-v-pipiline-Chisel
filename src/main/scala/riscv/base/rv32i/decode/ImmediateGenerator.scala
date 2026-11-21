@@ -1,7 +1,8 @@
-package riscv.elementosbasicos
+package riscv.base.rv32i.decode
 
 import chisel3._
 import chisel3.util._
+import riscv.isa.shared.RV32I
 
 /** Gerador de imediatos para instrucoes RV32I.
   *
