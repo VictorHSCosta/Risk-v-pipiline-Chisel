@@ -22,6 +22,22 @@ codificação de 32 bits após a expansão. Os sinais `writebackEnable`,
 
 ## CI e proteção da main
 
+- `python3 scripts/pipeline5-spike.py` requer Spike com `--instructions` e
+  `--log-commits` no PATH. Compara a sequência de PCs e escritas de registradores
+  de um programa misto curto, até a escrita de 1 em x31.
+- `bash scripts/pipeline5-act.sh image.hex ...` executa imagens preparadas para
+  este núcleo. Use uma palavra de 32 bits em hexadecimal por linha, em ordem de
+  endereço, com entrada em 0 e até 1024 palavras. O programa deve inicializar
+  seus dados por stores e encerrar escrevendo 1 (sucesso) ou outro valor (falha)
+  em x31, seguido de um loop válido. Reserve x31 para esse resultado. O runner
+  rejeita instrução ilegal, falha ou timeout. A geração oficial de ELFs pelo
+  ACT4 depende de configuração do DUT, Sail, linker e macros de término. O
+  runner cobre a execução de imagens compatíveis e o núcleo implementa um
+  subconjunto da ISA.
+- O teste de caixa preta escreve cobertura funcional observada em
+  `target/pipeline5-functional-coverage.tsv`. O CI publica o TSV e o HTML
+  navegável da hierarquia de módulos gerada do Verilog em `pipeline5-reports`.
+
 O workflow CI verifica formatação, executa a suíte inteira e elabora o Verilog
 do Pipeline5. Depois que o check `CI Required` aparecer no GitHub, configure um
 ruleset ativo para `main` que exija pull request e esse check de GitHub Actions
