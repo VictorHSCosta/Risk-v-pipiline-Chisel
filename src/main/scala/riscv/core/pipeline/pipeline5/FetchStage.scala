@@ -33,10 +33,18 @@ private[pipeline5] class FetchStage(initialProgram: Seq[Long], memoryWords: Int)
   when(io.redirect.valid) { pc := io.redirect.bits }
     .elsewhen(fetch.io.valid) { pc := pc + fetch.io.length }
   io.pc := pc
-  io.out.pc := pc
-  io.out.valid := fetch.io.valid
-  io.out.instr := fetch.io.instr
-  io.out.length := fetch.io.length
-  io.out.illegal := fetch.io.illegal
+  val next = Wire(new FetchPacket)
+  next.pc := pc
+  next.valid := fetch.io.valid
+  next.instr := fetch.io.instr
+  next.length := fetch.io.length
+  next.illegal := fetch.io.illegal
 
+  val output = RegInit(0.U.asTypeOf(new FetchPacket))
+  when(io.redirect.valid) {
+    output.valid := false.B
+  }.elsewhen(!io.stall) {
+    output := next
+  }
+  io.out := output
 }

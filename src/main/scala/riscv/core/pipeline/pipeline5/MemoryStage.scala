@@ -15,8 +15,13 @@ private[pipeline5] class MemoryStage(memoryWords: Int) extends Module {
   dataMem.io.writeEnable := exMem.store
   dataMem.io.memSize := exMem.size
   dataMem.io.unsignedLoad := exMem.unsigned
-  io.out.rd := exMem.rd
-  io.out.enable := exMem.regWrite
-  io.out.data := Mux(exMem.load, dataMem.io.readData, exMem.result)
+  val next = Wire(new WritebackPacket)
+  next.valid := exMem.valid
+  next.pc := exMem.pc
+  next.instr := exMem.instr
+  next.rd := exMem.rd
+  next.enable := exMem.regWrite
+  next.data := Mux(exMem.load, dataMem.io.readData, exMem.result)
 
+  io.out := RegNext(next, 0.U.asTypeOf(new WritebackPacket))
 }

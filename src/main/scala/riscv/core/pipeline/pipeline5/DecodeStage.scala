@@ -8,6 +8,7 @@ import riscv.isa.shared.RV32I._
 
 private[pipeline5] class DecodePacket extends Bundle {
   val valid = Bool()
+  val instr = UInt(32.W)
   val pc = UInt(32.W)
   val instrLength = UInt(3.W)
   val rs1 = UInt(5.W)
@@ -21,6 +22,7 @@ private[pipeline5] class DecodePacket extends Bundle {
 
 private[pipeline5] class DecodeStage extends Module {
   val io = IO(new Bundle {
+    val flush = Input(Bool())
     val in = Input(new FetchPacket)
     val wb = Input(new WritebackPacket)
     val loadInExecute = Input(Bool())
@@ -56,19 +58,27 @@ private[pipeline5] class DecodeStage extends Module {
     opcode === Opcode.OP || opcode === Opcode.STORE || opcode === Opcode.BRANCH
   val usesRs1 = usesRs2 || opcode === Opcode.OP_IMM || opcode === Opcode.LOAD ||
     opcode === Opcode.JALR
-  io.stall := ifId.valid && !idIllegal && io.loadInExecute && io.executeRd =/= 0.U &&
-    ((usesRs1 && idRs1 === io.executeRd) || (usesRs2 && idRs2 === io.executeRd))
+  val stall =
+    ifId.valid && !idIllegal && io.loadInExecute && io.executeRd =/= 0.U &&
+      ((usesRs1 && idRs1 === io.executeRd) || (usesRs2 && idRs2 === io.executeRd))
 
-  io.out.valid := ifId.valid
-  io.out.pc := ifId.pc
-  io.out.instrLength := ifId.length
-  io.out.rs1 := idRs1
-  io.out.rs2 := idRs2
-  io.out.rd := ifId.instr(11, 7)
-  io.out.rs1Value := fromWriteback(idRs1, regFile.io.readData1)
-  io.out.rs2Value := fromWriteback(idRs2, regFile.io.readData2)
-  io.out.imm := immGen.io.imm
-  io.out.signals := controller.io.signals
-  io.out.signals.illegal := idIllegal
+  io.stall := stall
+  val next = Wire(new DecodePacket)
+  next.instr := ifId.instr
+  next.valid := ifId.valid
+  next.pc := ifId.pc
+  next.instrLength := ifId.length
+  next.rs1 := idRs1
+  next.rs2 := idRs2
+  next.rd := ifId.instr(11, 7)
+  next.rs1Value := fromWriteback(idRs1, regFile.io.readData1)
+  next.rs2Value := fromWriteback(idRs2, regFile.io.readData2)
+  next.imm := immGen.io.imm
+  next.signals := controller.io.signals
+  next.signals.illegal := idIllegal
 
+  val output = RegInit(0.U.asTypeOf(new DecodePacket))
+  output := next
+  output.valid := next.valid && !stall && !io.flush
+  io.out := output
 }

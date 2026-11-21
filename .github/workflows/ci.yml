@@ -3,6 +3,10 @@ name: CI
 on:
   push:
   pull_request:
+  merge_group:
+
+permissions:
+  contents: read
 
 jobs:
   lint:
@@ -45,4 +49,19 @@ jobs:
         uses: sbt/setup-sbt@v1
 
       - name: Run tests
+        env:
+          RV32I_HEX: src/test/resources/diagnostics/rv32i-add.hex
         run: sbt test
+
+      - name: Elaborate Pipeline5 Verilog
+        run: sbt "runMain riscv.core.pipeline.pipeline5.Pipeline5Main --target-dir target/ci-verilog"
+
+  required:
+    name: CI Required
+    if: always()
+    needs: [lint, test]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require all jobs to pass
+        if: needs.lint.result != 'success' || needs.test.result != 'success'
+        run: exit 1

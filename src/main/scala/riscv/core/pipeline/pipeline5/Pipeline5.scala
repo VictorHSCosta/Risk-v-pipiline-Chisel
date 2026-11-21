@@ -12,6 +12,9 @@ class Pipeline5(initialProgram: Seq[Long] = Seq.empty, memoryWords: Int = 1024)
     val writebackData = Output(UInt(32.W))
     val writebackRd = Output(UInt(5.W))
     val writebackEnable = Output(Bool())
+    val commitValid = Output(Bool())
+    val commitPc = Output(UInt(32.W))
+    val commitInstr = Output(UInt(32.W))
     val illegal = Output(Bool())
     val stalled = Output(Bool())
   })
@@ -22,37 +25,24 @@ class Pipeline5(initialProgram: Seq[Long] = Seq.empty, memoryWords: Int = 1024)
   private val memory = Module(new MemoryStage(memoryWords))
   private val writeback = Module(new WritebackStage)
 
-  private val ifId = RegInit(0.U.asTypeOf(new FetchPacket))
-  private val idEx = RegInit(0.U.asTypeOf(new DecodePacket))
-  private val exMem = RegInit(0.U.asTypeOf(new ExecutePacket))
-  private val memWb = RegInit(0.U.asTypeOf(new WritebackPacket))
-
   fetch.io.stall := decode.io.stall
   fetch.io.redirect := execute.io.redirect
-  decode.io.in := ifId
+  decode.io.flush := execute.io.redirect.valid
+  decode.io.in := fetch.io.out
   decode.io.wb := writeback.io.out
-  decode.io.loadInExecute := execute.io.out.load
-  decode.io.executeRd := execute.io.out.rd
-  execute.io.in := idEx
-  execute.io.mem := exMem
+  decode.io.loadInExecute := execute.io.loadInExecute
+  decode.io.executeRd := execute.io.executeRd
+  execute.io.in := decode.io.out
+  execute.io.mem := execute.io.out
   execute.io.wb := writeback.io.out
-  memory.io.in := exMem
-  writeback.io.in := memWb
+  memory.io.in := execute.io.out
+  writeback.io.in := memory.io.out
 
-  when(execute.io.redirect.valid) {
-    ifId.valid := false.B
-    idEx.valid := false.B
-  }.elsewhen(decode.io.stall) {
-    idEx.valid := false.B
-  }.otherwise {
-    ifId := fetch.io.out
-    idEx := decode.io.out
-  }
-  exMem := execute.io.out
-  memWb := memory.io.out
-
+  io.commitValid := writeback.io.out.valid
+  io.commitPc := writeback.io.out.pc
+  io.commitInstr := writeback.io.out.instr
   io.pc := fetch.io.pc
-  io.instr := ifId.instr
+  io.instr := fetch.io.out.instr
   io.aluResult := execute.io.aluResult
   io.illegal := execute.io.illegal
   io.stalled := decode.io.stall

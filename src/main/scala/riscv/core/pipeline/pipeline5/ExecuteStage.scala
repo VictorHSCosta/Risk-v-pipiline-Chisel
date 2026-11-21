@@ -6,6 +6,10 @@ import riscv.core.models.execute.ULA
 import riscv.isa.shared.RV32I._
 
 private[pipeline5] class ExecutePacket extends Bundle {
+  val pc = UInt(32.W)
+  val instr = UInt(32.W)
+  val valid = Bool()
+
   val rd = UInt(5.W)
   val regWrite = Bool()
   val load = Bool()
@@ -22,6 +26,8 @@ private[pipeline5] class ExecuteStage extends Module {
     val mem = Input(new ExecutePacket)
     val wb = Input(new WritebackPacket)
     val out = Output(new ExecutePacket)
+    val loadInExecute = Output(Bool())
+    val executeRd = Output(UInt(5.W))
     val redirect = Valid(UInt(32.W))
     val aluResult = Output(UInt(32.W))
     val illegal = Output(Bool())
@@ -82,23 +88,30 @@ private[pipeline5] class ExecuteStage extends Module {
 
   val exValid = idEx.valid && !idEx.signals.illegal
   val exLoad = exValid && idEx.signals.writebackSel === WritebackSel.MEM
-  io.out.rd := idEx.rd
-  io.out.regWrite := exValid && idEx.signals.regWrite && idEx.rd =/= 0.U
-  io.out.load := exLoad
-  io.out.store := exValid && idEx.signals.memWrite
-  io.out.size := idEx.signals.memSize
-  io.out.unsigned := idEx.signals.memUnsigned
-  io.out.result := MuxLookup(idEx.signals.writebackSel, ula.io.result)(
+  io.loadInExecute := exLoad
+  io.executeRd := idEx.rd
+  val next = Wire(new ExecutePacket)
+  next.valid := exValid
+  next.pc := idEx.pc
+  next.instr := idEx.instr
+  next.rd := idEx.rd
+  next.regWrite := exValid && idEx.signals.regWrite && idEx.rd =/= 0.U
+  next.load := exLoad
+  next.store := exValid && idEx.signals.memWrite
+  next.size := idEx.signals.memSize
+  next.unsigned := idEx.signals.memUnsigned
+  next.result := MuxLookup(idEx.signals.writebackSel, ula.io.result)(
     Seq(
       WritebackSel.PC4 -> (idEx.pc + idEx.instrLength),
       WritebackSel.IMM -> idEx.imm
     )
   )
-  io.out.storeData := rs2
+  next.storeData := rs2
 
   io.redirect.valid := controlRedirect
   io.redirect.bits := redirectTarget
   io.aluResult := ula.io.result
   io.illegal := idEx.valid && idEx.signals.illegal
 
+  io.out := RegNext(next, 0.U.asTypeOf(new ExecutePacket))
 }
