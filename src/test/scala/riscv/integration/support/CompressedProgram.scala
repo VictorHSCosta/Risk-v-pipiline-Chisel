@@ -34,11 +34,13 @@ private[integration] object CompressedProgram {
       clock: Clock,
       writebackEnable: Bool,
       writebackRd: UInt,
-      writebackData: UInt
+      writebackData: UInt,
+      observeCycle: () => Unit = () => ()
   ): Unit = {
     val writes = mutable.Map.empty[Int, BigInt]
     var cycles = 0
     while (!writes.contains(31) && cycles < 256) {
+      observeCycle()
       if (writebackEnable.peekBoolean()) {
         val rd = writebackRd.peekInt().toInt
         if (rd != 0) writes(rd) = writebackData.peekInt()

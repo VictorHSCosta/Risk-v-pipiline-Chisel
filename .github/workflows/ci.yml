@@ -3,6 +3,10 @@ name: CI
 on:
   push:
   pull_request:
+  merge_group:
+
+permissions:
+  contents: read
 
 jobs:
   lint:
@@ -45,4 +49,32 @@ jobs:
         uses: sbt/setup-sbt@v1
 
       - name: Run tests
+        env:
+          RV32I_HEX: src/test/resources/diagnostics/rv32i-add.hex
+          PIPELINE5_HEX: src/test/resources/rv32c/integer-program.hex
         run: sbt test
+
+      - name: Elaborate Pipeline5 Verilog
+        run: sbt "runMain riscv.core.pipeline.pipeline5.Pipeline5Main --target-dir target/ci-verilog"
+
+      - name: Export RTL hierarchy
+        run: python3 scripts/pipeline5-diagram.py target/ci-verilog/Pipeline5.v target/ci-verilog/hierarchy.html
+
+      - name: Upload Pipeline5 reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: pipeline5-reports
+          if-no-files-found: error
+          path: |
+            target/ci-verilog/hierarchy.html
+            target/pipeline5-functional-coverage.tsv
+
+  required:
+    name: CI Required
+    if: always()
+    needs: [lint, test]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require all jobs to pass
+        if: needs.lint.result != 'success' || needs.test.result != 'success'
+        run: exit 1
