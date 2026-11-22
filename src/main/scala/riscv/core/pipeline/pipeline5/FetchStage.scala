@@ -12,23 +12,36 @@ private[pipeline5] class FetchPacket extends Bundle {
   val length = UInt(3.W)
 }
 
-private[pipeline5] class FetchStage(initialProgram: Seq[Long], memoryWords: Int)
-    extends Module {
+private[pipeline5] class FetchStage(
+    initialProgram: Seq[Long],
+    memoryWords: Int,
+    resetPc: Long,
+    externalMemory: Boolean
+) extends Module {
   val io = IO(new Bundle {
+    val external = Option.when(externalMemory)(new Bundle {
+      val address = Output(UInt(32.W))
+      val data = Input(UInt(32.W))
+    })
     val stall = Input(Bool())
     val redirect = Input(chisel3.util.Valid(UInt(32.W)))
     val out = Output(new FetchPacket)
     val pc = Output(UInt(32.W))
   })
-  val instrMem = Module(new InstructionMemory(memoryWords, initialProgram))
   val fetch = Module(new InstructionFetch)
-  val pc = RegInit(0.U(32.W))
+  val pc = RegInit(resetPc.U(32.W))
   fetch.io.pc := pc
   fetch.io.enable := !io.stall
   fetch.io.flush := io.redirect.valid
-  fetch.io.memoryData := instrMem.io.readData
-  instrMem.io.address := fetch.io.memoryAddress
-  instrMem.io.readEnable := fetch.io.memoryReadEnable
+  if (externalMemory) {
+    io.external.get.address := fetch.io.memoryAddress
+    fetch.io.memoryData := io.external.get.data
+  } else {
+    val instrMem = Module(new InstructionMemory(memoryWords, initialProgram))
+    fetch.io.memoryData := instrMem.io.readData
+    instrMem.io.address := fetch.io.memoryAddress
+    instrMem.io.readEnable := fetch.io.memoryReadEnable
+  }
 
   when(io.redirect.valid) { pc := io.redirect.bits }
     .elsewhen(fetch.io.valid) { pc := pc + fetch.io.length }

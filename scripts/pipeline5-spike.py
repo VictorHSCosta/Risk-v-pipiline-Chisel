@@ -12,17 +12,21 @@ program = struct.pack("<HIII", 0x448d, 0x00448513, 0xffa50f93, 0x0000006f)
 base = 0x80000000
 offset = 0x1000
 header = struct.pack("<16sHHIIIIIHHHHHH", b"\x7fELF\x01\x01\x01", 2, 243, 1,
-                     base, 52, 0, 1, 52, 32, 1, 0, 0, 0)
+                     base, 52, 84, 1, 52, 32, 1, 40, 2, 1)
 segment = struct.pack("<8I", 1, offset, base, base, len(program), len(program), 5, offset)
+section_names = b"\0.shstrtab\0"
+sections = bytes(40) + struct.pack("<10I", 1, 3, 0, 0, 164, len(section_names), 0, 0, 1, 0)
 with tempfile.TemporaryDirectory() as directory:
     root = Path(directory)
     elf = root / "program.elf"
-    elf.write_bytes((header + segment).ljust(offset, b"\0") + program)
+    elf.write_bytes((header + segment + sections + section_names).ljust(offset, b"\0") + program)
     hexfile = root / "program.hex"
     padded = program.ljust((len(program) + 3) // 4 * 4, b"\0")
     hexfile.write_text("".join(f"{word:08x}\n" for (word,) in struct.iter_unpack("<I", padded)))
     run = subprocess.run(["spike", "--isa=rv32ic", "--instructions=64", "--log-commits",
-                          "-m1", str(elf)], capture_output=True, text=True, timeout=30, check=True)
+                          "-m1", str(elf)], capture_output=True, text=True, timeout=30)
+    if run.returncode:
+        raise SystemExit(run.stderr or f"Spike exited with status {run.returncode}")
     rows = []
     for line in run.stderr.splitlines():
         match = re.match(r"core\s+0:\s+\d+\s+0x([0-9a-f]+)\s+\(0x[0-9a-f]+\)(.*)", line)

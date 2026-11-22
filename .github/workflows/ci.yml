@@ -51,6 +51,7 @@ jobs:
       - name: Run tests
         env:
           RV32I_HEX: src/test/resources/diagnostics/rv32i-add.hex
+          PIPELINE5_HEX: src/test/resources/rv32c/integer-program.hex
         run: sbt test
 
       - name: Elaborate Pipeline5 Verilog

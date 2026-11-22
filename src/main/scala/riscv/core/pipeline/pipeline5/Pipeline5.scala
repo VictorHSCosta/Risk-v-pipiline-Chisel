@@ -3,9 +3,23 @@ package riscv.core.pipeline.pipeline5
 import chisel3._
 
 /** Núcleo em ordem com estágios IF, ID, EX, MEM e WB. */
-class Pipeline5(initialProgram: Seq[Long] = Seq.empty, memoryWords: Int = 1024)
-    extends Module {
+class Pipeline5(
+    initialProgram: Seq[Long] = Seq.empty,
+    memoryWords: Int = 1024,
+    resetPc: Long = 0,
+    externalMemory: Boolean = false
+) extends Module {
+  private val fetch = Module(
+    new FetchStage(initialProgram, memoryWords, resetPc, externalMemory)
+  )
+  private val decode = Module(new DecodeStage)
+  private val execute = Module(new ExecuteStage)
+  private val memory = Module(new MemoryStage(memoryWords, externalMemory))
+  private val writeback = Module(new WritebackStage)
+
   val io = IO(new Bundle {
+    val instructionMemory = fetch.io.external.map(chiselTypeOf(_))
+    val dataMemory = memory.io.external.map(chiselTypeOf(_))
     val pc = Output(UInt(32.W))
     val instr = Output(UInt(32.W))
     val aluResult = Output(UInt(32.W))
@@ -19,11 +33,10 @@ class Pipeline5(initialProgram: Seq[Long] = Seq.empty, memoryWords: Int = 1024)
     val stalled = Output(Bool())
   })
 
-  private val fetch = Module(new FetchStage(initialProgram, memoryWords))
-  private val decode = Module(new DecodeStage)
-  private val execute = Module(new ExecuteStage)
-  private val memory = Module(new MemoryStage(memoryWords))
-  private val writeback = Module(new WritebackStage)
+  if (externalMemory) {
+    io.instructionMemory.get <> fetch.io.external.get
+    io.dataMemory.get <> memory.io.external.get
+  }
 
   fetch.io.stall := decode.io.stall
   fetch.io.redirect := execute.io.redirect

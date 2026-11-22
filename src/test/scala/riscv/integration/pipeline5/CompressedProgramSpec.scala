@@ -7,6 +7,22 @@ import riscv.core.pipeline.pipeline5.Pipeline5
 import riscv.integration.support.CompressedProgram
 
 class CompressedProgramSpec extends AnyFlatSpec with ChiselScalatestTester {
+  it should "reject multiplication because Pipeline5 implements RV32I only" in {
+    val mulX3X1X2 = 0x022081b3L
+    test(new Pipeline5(Seq(mulX3X1X2, 0x0000006fL), memoryWords = 16)) { dut =>
+      var sawIllegal = false
+      var committedMul = false
+      for (_ <- 0 until 12) {
+        sawIllegal ||= dut.io.illegal.peekBoolean()
+        committedMul ||= dut.io.commitValid.peekBoolean() &&
+          dut.io.commitPc.peekInt() == 0
+        dut.clock.step()
+      }
+      assert(sawIllegal, "M-extension instruction was not marked illegal")
+      assert(!committedMul, "illegal M-extension instruction committed")
+    }
+  }
+
   it should "report commits in order, including instructions without register writes" in {
     val program =
       Seq(0x00100093L, 0x0330000fL, 0x00000073L, 0x00100073L, 0x00108113L)

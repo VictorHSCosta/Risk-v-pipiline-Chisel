@@ -42,8 +42,9 @@ private[pipeline5] class DecodeStage extends Module {
   controller.io.funct3 := ifId.instr(14, 12)
   controller.io.funct7 := ifId.instr(31, 25)
   immGen.io.instr := ifId.instr
+  val isMExtension = opcode === Opcode.OP && ifId.instr(31, 25) === 1.U
   val idIllegal = ifId.illegal || controller.io.signals.illegal ||
-    opcode === Opcode.ATOMIC || opcode === Opcode.SYSTEM
+    opcode === Opcode.ATOMIC || opcode === Opcode.SYSTEM || isMExtension
 
   regFile.io.rs1 := idRs1
   regFile.io.rs2 := idRs2
